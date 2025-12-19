@@ -1,0 +1,1 @@
+  const [plusvaliaRealPct, setPlusvaliaRealPct] = useState(1); // crecimiento real adicional del inmueble sobre inflación

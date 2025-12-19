@@ -140,7 +140,7 @@ export default function SimuladorCompraVsInversion() {
   const [precio, setPrecio] = useState(2_000_000); // Precio del inmueble
   const [gastosPct, setGastosPct] = useState(5);   // % de gastos de compra sobre el precio
   const [inflacionPct, setInflacionPct] = useState(4); // % anual (impacta rentas y valor del inmueble)
-  const [plusvaliaRealPct, setPlusvaliaRealPct] = useState(0); // crecimiento real adicional del inmueble sobre inflación
+  const [plusvaliaRealPct, setPlusvaliaRealPct] = useState(1); // crecimiento real adicional del inmueble sobre inflación
   const [tasaCetesPct, setTasaCetesPct] = useState(6); // % nominal anual inversión
   const [predialPct, setPredialPct] = useState(0.2);   // % anual sobre valor del inmueble
   const [mantenMeses, setMantenMeses] = useState(1);   // meses de renta por año como mantenimiento
@@ -509,7 +509,7 @@ export default function SimuladorCompraVsInversion() {
       </div>
 
       {/* Wizard de parámetros */}
-      <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
+      <div className="bg-white shadow-lg rounded-2xl overflow-visible">
         {/* Indicador de progreso */}
         <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b">
           <div className="flex items-center justify-between max-w-3xl mx-auto">
@@ -595,7 +595,24 @@ export default function SimuladorCompraVsInversion() {
             <label htmlFor="inflacionPct" className="text-sm text-gray-700">Inflación anual (% anual)</label>
             <input id="inflacionPct" type="number" step={0.1} value={inflacionPct} onChange={e=>setInflacionPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
-            <label htmlFor="plusvaliaRealPct" className="text-sm text-gray-700">Plusvalía real (% adicional)</label>
+            <div className="flex items-center gap-2">
+              <label htmlFor="plusvaliaRealPct" className="text-sm text-gray-700">Plusvalía real (% adicional)</label>
+              <div className="relative group">
+                <button
+                  type="button"
+                  aria-label="Ayuda: plusvalía real"
+                  className="w-5 h-5 rounded-full border border-gray-300 text-gray-600 text-xs font-semibold leading-none flex items-center justify-center bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  ?
+                </button>
+                <div className="hidden group-hover:block group-focus-within:block absolute z-10 left-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow px-3 py-2 text-xs text-gray-700">
+                  <div className="font-semibold text-gray-900 mb-1">¿Qué es Plusvalía Real?</div>
+                  <div>Es el crecimiento del valor del inmueble <b>por encima de la inflación</b>. Representa la apreciación real del activo a lo largo del tiempo.</div>
+                  <div className="mt-1">El valor actual viene prerellenado con <b>1%</b>, una estimación realista y pesimista para México.</div>
+                  <div className="mt-1 text-gray-600">Si no estás seguro de este valor, no lo modifiques; el simulador funciona bien con este valor por defecto.</div>
+                </div>
+              </div>
+            </div>
             <input id="plusvaliaRealPct" type="number" step={0.1} value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
               </div>
             </div>
