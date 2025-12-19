@@ -169,8 +169,7 @@ export default function SimuladorCompraVsInversion() {
 
   // Rentas
   // Escenario 1: ingreso por alquilar el inmueble comprado
-  const [rentaRecibidaMensual, setRentaRecibidaMensual] = useState(2000);
-  const [rentaRecibidaIndexa, setRentaRecibidaIndexa] = useState(true); // si ajusta por inflación
+  const [rendimientoRentaPct, setRendimientoRentaPct] = useState(4); // % anual del valor del inmueble (promedio pesimista)
   const [aportaE1Anual, setAportaE1Anual] = useState(0); // aportación adicional anual al efectivo
 
   // Escenario 2: costo por alquilar a un tercero mientras inviertes el capital
@@ -212,6 +211,8 @@ export default function SimuladorCompraVsInversion() {
     const pred = predialPct / 100;
     const gastos = precio * (gastosPct / 100);
 
+    const rendimientoRenta = clamp(rendimientoRentaPct, 0, 100) / 100;
+
     const vacMeses = clamp(vacanciaMesesAnual, 0, 12);
     const factorCobro = (12 - vacMeses) / 12;
     const adminPct = clamp(adminPctRenta, 0, 100) / 100;
@@ -220,7 +221,6 @@ export default function SimuladorCompraVsInversion() {
 
     let valorCasa = precio;           // valor del activo
     let efectivo = -gastos;           // egresos iniciales (escrituras, impuestos, avalúo, etc.)
-    let renta = rentaRecibidaMensual; // renta mensual recibida
 
     let seguro = seguroAnual;
     let condominio = condominioMensual;
@@ -229,9 +229,10 @@ export default function SimuladorCompraVsInversion() {
     const rows = [];
 
     for (let a = 1; a <= anios; a++) {
-      const rentaAnualBruta = renta * 12;
+      const rentaAnualBruta = valorCasa * rendimientoRenta;
       const rentaAnual = rentaAnualBruta * factorCobro;
-      const mantenimiento = renta * mantenMeses; // meses de renta por año
+      const rentaMensual = rentaAnualBruta / 12;
+      const mantenimiento = rentaMensual * mantenMeses; // meses de renta por año
       const predial = pred * valorCasa;
       const administracion = rentaAnual * adminPct;
       const condominioAnual = condominio * 12;
@@ -257,7 +258,6 @@ export default function SimuladorCompraVsInversion() {
 
       // actualización de variables para el siguiente año
       valorCasa *= (1 + infl) * (1 + plus);
-      if (rentaRecibidaIndexa) renta *= (1 + infl);
       if (seguro > 0) seguro *= (1 + infl);
       if (condominio > 0) condominio *= (1 + infl);
       if (capex > 0) capex *= (1 + infl);
@@ -350,8 +350,7 @@ export default function SimuladorCompraVsInversion() {
     tasaCetesPct,
     predialPct,
     mantenMeses,
-    rentaRecibidaMensual,
-    rentaRecibidaIndexa,
+    rendimientoRentaPct,
     rentaPagadaMensual,
     rentaPagadaIndexa,
     aportaE1Anual,
@@ -492,16 +491,40 @@ export default function SimuladorCompraVsInversion() {
               </div>
               <p className="text-sm text-gray-600 pb-2 border-b">Compras el inmueble y lo rentas a un tercero. Define los ingresos por renta, costos operativos (seguro, condominio, mantenimiento, vacancia), impuestos y los costos de salida al vender.</p>
               <div className="grid grid-cols-2 items-center gap-2">
-            <label htmlFor="rentaRecibidaMensual" className="text-sm text-gray-700">Renta recibida ({moneda}/mes)</label>
-            <InputNumeroFormateado
-              id="rentaRecibidaMensual"
-              value={rentaRecibidaMensual}
-              onChangeValue={setRentaRecibidaMensual}
-              locale={locale}
-              min={0}
-              decimals={0}
-              className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
-            />
+            <div className="flex items-center gap-2">
+              <label htmlFor="rendimientoRentaPct" className="text-sm text-gray-700">Rendimiento por renta (% anual del valor)</label>
+              <div className="relative group">
+                <button
+                  type="button"
+                  aria-label="Ayuda: rendimiento por renta"
+                  className="w-5 h-5 rounded-full border border-gray-300 text-gray-600 text-xs font-semibold leading-none flex items-center justify-center bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  ?
+                </button>
+                <div className="hidden group-hover:block group-focus-within:block absolute z-10 left-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow px-3 py-2 text-xs text-gray-700">
+                  <div className="font-semibold text-gray-900 mb-1">¿Cómo se calcula?</div>
+                  <div>Se estima con: <span className="font-medium">renta anual bruta = valor del inmueble × rendimiento</span>.</div>
+                  <div className="mt-1">Como el valor del inmueble crece con inflación/plusvalía, la renta estimada también se ajusta automáticamente.</div>
+                  <div className="mt-1 text-gray-600">Tip: no es necesario modificarlo; déjalo como referencia y ajusta solo si tienes un dato mejor.</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                id="rendimientoRentaPct"
+                type="number"
+                min={0}
+                step={0.1}
+                value={rendimientoRentaPct}
+                onChange={(e) => setRendimientoRentaPct(Number(e.target.value))}
+                className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
+              />
+              <div className="text-xs text-gray-600 whitespace-nowrap">
+                <div>≈ {mxn.format(precio * (Math.max(0, rendimientoRentaPct) / 100))}/año</div>
+                <div>≈ {mxn.format((precio * (Math.max(0, rendimientoRentaPct) / 100)) / 12)}/mes</div>
+              </div>
+            </div>
 
             <label htmlFor="vacanciaMesesAnual" className="text-sm text-gray-700">Vacancia (meses sin cobrar/año)</label>
             <input id="vacanciaMesesAnual" type="number" min={0} max={12} step={0.5} value={vacanciaMesesAnual} onChange={e=>setVacanciaMesesAnual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
@@ -516,11 +539,6 @@ export default function SimuladorCompraVsInversion() {
               className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
             />
           </div>
-
-          <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
-            <input id="rentaRecibidaIndexa" type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer" />
-            <label htmlFor="rentaRecibidaIndexa">Indexar renta por inflación</label>
-              </div>
 
               <div className="pt-2 border-t border-blue-100 space-y-2">
             <h3 className="font-medium text-blue-900">Costos operativos</h3>
