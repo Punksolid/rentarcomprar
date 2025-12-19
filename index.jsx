@@ -159,54 +159,54 @@ export default function SimuladorCompraVsInversion() {
       <div className="grid xl:grid-cols-4 lg:grid-cols-3 gap-6">
         <div className="bg-white shadow rounded-2xl p-4 space-y-3">
           <h2 className="font-semibold">Parámetros del activo</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Precio del inmueble</label><input type="number" value={precio} onChange={e=>setPrecio(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Gastos de compra (%)</label><input type="number" value={gastosPct} onChange={e=>setGastosPct(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Predial anual (%)</label><input type="number" value={predialPct} onChange={e=>setPredialPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Mantenimiento (meses renta/año)</label><input type="number" min={0} step={0.1} value={mantenMeses} onChange={e=>setMantenMeses(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Inflación anual (%)</label><input type="number" value={inflacionPct} onChange={e=>setInflacionPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Plusvalía real (%)</label><input type="number" value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Precio del inmueble</label><input type="number" value={precio} onChange={e=>setPrecio(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Gastos de compra (%)</label><input type="number" value={gastosPct} onChange={e=>setGastosPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Predial anual (%)</label><input type="number" value={predialPct} onChange={e=>setPredialPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Mantenimiento (meses renta/año)</label><input type="number" min={0} step={0.1} value={mantenMeses} onChange={e=>setMantenMeses(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Inflación anual (%)</label><input type="number" value={inflacionPct} onChange={e=>setInflacionPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Plusvalía real (%)</label><input type="number" value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
         </div>
 
         <div className="bg-white shadow rounded-2xl p-4 space-y-3">
           <h2 className="font-semibold">Escenario 1 · Comprar y alquilar</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Renta mensual recibida</label><input type="number" value={rentaRecibidaMensual} onChange={e=>setRentaRecibidaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} /><span>Ajustar renta por inflación</span></label>
-          <div className="flex items-center justify-between"><label className="mr-2">Aportación anual adicional</label><input type="number" value={aportaE1Anual} onChange={e=>setAportaE1Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Renta mensual recibida</label><input type="number" value={rentaRecibidaMensual} onChange={e=>setRentaRecibidaMensual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer"/><span>Ajustar renta por inflación</span></label>
+          <div className="flex items-center justify-between"><label className="mr-2">Aportación anual adicional</label><input type="number" value={aportaE1Anual} onChange={e=>setAportaE1Anual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
 
           <div className="pt-2 border-t">
             <h3 className="font-medium">Impuestos – Arrendamiento</h3>
             <div className="flex items-center justify-between"><label className="mr-2">Modo</label>
-              <select value={modoArrISR} onChange={e=>setModoArrISR(e.target.value)} className="border rounded px-2 py-1 w-40">
+              <select value={modoArrISR} onChange={e=>setModoArrISR(e.target.value)} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50 cursor-pointer">
                 <option value="ciega">Deducción ciega</option>
                 <option value="real">Gastos reales</option>
               </select>
             </div>
             {modoArrISR === "ciega" && (
-              <div className="flex items-center justify-between"><label className="mr-2">Deducción ciega (%)</label><input type="number" value={deduccionCiegaPct} onChange={e=>setDeduccionCiegaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
+              <div className="flex items-center justify-between"><label className="mr-2">Deducción ciega (%)</label><input type="number" value={deduccionCiegaPct} onChange={e=>setDeduccionCiegaPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
             )}
-            <div className="flex items-center justify-between"><label className="mr-2">ISR sobre base (%)</label><input type="number" value={isrRentaPct} onChange={e=>setIsrRentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
+            <div className="flex items-center justify-between"><label className="mr-2">ISR sobre base (%)</label><input type="number" value={isrRentaPct} onChange={e=>setIsrRentaPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
             <p className="text-xs text-gray-600">En "ciega" la base = ingreso × (1 − deducción). En "real" la base = ingreso − (mantenimiento + predial). El ISR se resta del flujo neto.</p>
           </div>
         </div>
 
         <div className="bg-white shadow rounded-2xl p-4 space-y-3">
           <h2 className="font-semibold">Escenario 2 · Inversión y alquiler</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Renta mensual pagada</label><input type="number" value={rentaPagadaMensual} onChange={e=>setRentaPagadaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} /><span>Indexar renta por inflación</span></label>
-          <div className="flex items-center justify-between"><label className="mr-2">Tasa CETES anual (%)</label><input type="number" value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Aportación anual adicional</label><input type="number" value={aportaE2Anual} onChange={e=>setAportaE2Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Renta mensual pagada</label><input type="number" value={rentaPagadaMensual} onChange={e=>setRentaPagadaMensual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer"/><span>Indexar renta por inflación</span></label>
+          <div className="flex items-center justify-between"><label className="mr-2">Tasa CETES anual (%)</label><input type="number" value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Aportación anual adicional</label><input type="number" value={aportaE2Anual} onChange={e=>setAportaE2Anual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
 
           <div className="pt-2 border-t">
             <h3 className="font-medium">Impuestos – Intereses</h3>
-            <div className="flex items-center justify-between"><label className="mr-2">ISR intereses (%)</label><input type="number" value={isrInteresesPct} onChange={e=>setIsrInteresesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-            <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={gravaInteresReal} onChange={e=>setGravaInteresReal(e.target.checked)} /><span>Gravar solo interés real</span></label>
+            <div className="flex items-center justify-between"><label className="mr-2">ISR intereses (%)</label><input type="number" value={isrInteresesPct} onChange={e=>setIsrInteresesPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+            <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={gravaInteresReal} onChange={e=>setGravaInteresReal(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer"/><span>Gravar solo interés real</span></label>
             <p className="text-xs text-gray-600">Interés real ≈ interés − (inflación × capital). Si está activo, el ISR se calcula sobre el interés real no negativo.</p>
           </div>
         </div>
 
         <div className="bg-white shadow rounded-2xl p-4 space-y-3">
           <h2 className="font-semibold">Horizonte</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Años</label><input type="number" value={horizonte} onChange={e=>setHorizonte(Number(e.target.value))} className="border rounded px-2 py-1 w-24"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Años</label><input type="number" value={horizonte} onChange={e=>setHorizonte(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-24 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
           <p className="text-xs text-gray-600">Se muestran resúmenes a 5, 10 y el horizonte elegido, además de dos gráficas.</p>
         </div>
       </div>

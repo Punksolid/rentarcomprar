@@ -384,7 +384,7 @@ export default function SimuladorCompraVsInversion() {
         </div>
         <div className="bg-white shadow rounded-2xl p-3 border-t-4 border-slate-300 ring-1 ring-slate-100">
           <label htmlFor="moneda" className="text-xs text-gray-600 block mb-1">Moneda</label>
-          <select id="moneda" value={moneda} onChange={(e) => setMoneda(e.target.value)} className="border rounded px-2 py-1 w-32 focus:outline-none focus:ring-2 focus:ring-blue-200">
+          <select id="moneda" value={moneda} onChange={(e) => setMoneda(e.target.value)} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-32 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50 cursor-pointer">
             <option value="MXN">MXN</option>
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>
@@ -463,23 +463,23 @@ export default function SimuladorCompraVsInversion() {
               locale={locale}
               min={0}
               decimals={0}
-              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
             />
 
             <label htmlFor="gastosPct" className="text-sm text-gray-700">Gastos de compra (% del precio)</label>
-            <input id="gastosPct" type="number" min={0} step={0.1} value={gastosPct} onChange={e=>setGastosPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="gastosPct" type="number" min={0} step={0.1} value={gastosPct} onChange={e=>setGastosPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
             <label htmlFor="predialPct" className="text-sm text-gray-700">Predial anual (% del valor)</label>
-            <input id="predialPct" type="number" min={0} step={0.01} value={predialPct} onChange={e=>setPredialPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="predialPct" type="number" min={0} step={0.01} value={predialPct} onChange={e=>setPredialPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
             <label htmlFor="mantenMeses" className="text-sm text-gray-700">Mantenimiento (meses renta/año)</label>
-            <input id="mantenMeses" type="number" min={0} step={0.1} value={mantenMeses} onChange={e=>setMantenMeses(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="mantenMeses" type="number" min={0} step={0.1} value={mantenMeses} onChange={e=>setMantenMeses(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
             <label htmlFor="inflacionPct" className="text-sm text-gray-700">Inflación anual (% anual)</label>
-            <input id="inflacionPct" type="number" step={0.1} value={inflacionPct} onChange={e=>setInflacionPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="inflacionPct" type="number" step={0.1} value={inflacionPct} onChange={e=>setInflacionPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
             <label htmlFor="plusvaliaRealPct" className="text-sm text-gray-700">Plusvalía real (% adicional)</label>
-            <input id="plusvaliaRealPct" type="number" step={0.1} value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="plusvaliaRealPct" type="number" step={0.1} value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
               </div>
             </div>
           )}
@@ -500,11 +500,11 @@ export default function SimuladorCompraVsInversion() {
               locale={locale}
               min={0}
               decimals={0}
-              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
             />
 
             <label htmlFor="vacanciaMesesAnual" className="text-sm text-gray-700">Vacancia (meses sin cobrar/año)</label>
-            <input id="vacanciaMesesAnual" type="number" min={0} max={12} step={0.5} value={vacanciaMesesAnual} onChange={e=>setVacanciaMesesAnual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="vacanciaMesesAnual" type="number" min={0} max={12} step={0.5} value={vacanciaMesesAnual} onChange={e=>setVacanciaMesesAnual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
             <label htmlFor="aportaE1Anual" className="text-sm text-gray-700">Aportación adicional ({moneda}/año)</label>
             <InputNumeroFormateado
@@ -513,12 +513,12 @@ export default function SimuladorCompraVsInversion() {
               onChangeValue={setAportaE1Anual}
               locale={locale}
               decimals={0}
-              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
             />
           </div>
 
           <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
-            <input id="rentaRecibidaIndexa" type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} />
+            <input id="rentaRecibidaIndexa" type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer" />
             <label htmlFor="rentaRecibidaIndexa">Indexar renta por inflación</label>
               </div>
 
@@ -533,7 +533,7 @@ export default function SimuladorCompraVsInversion() {
                 locale={locale}
                 min={0}
                 decimals={0}
-                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
               />
 
               <label htmlFor="condominioMensual" className="text-sm text-gray-700">Condominio/HOA ({moneda}/mes)</label>
@@ -544,11 +544,11 @@ export default function SimuladorCompraVsInversion() {
                 locale={locale}
                 min={0}
                 decimals={0}
-                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
               />
 
               <label htmlFor="adminPctRenta" className="text-sm text-gray-700">Administración (% de renta cobrada)</label>
-              <input id="adminPctRenta" type="number" min={0} step={0.1} value={adminPctRenta} onChange={e=>setAdminPctRenta(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <input id="adminPctRenta" type="number" min={0} step={0.1} value={adminPctRenta} onChange={e=>setAdminPctRenta(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
               <label htmlFor="capexMonto" className="text-sm text-gray-700">CAPEX ({moneda})</label>
               <InputNumeroFormateado
@@ -558,11 +558,11 @@ export default function SimuladorCompraVsInversion() {
                 locale={locale}
                 min={0}
                 decimals={0}
-                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
               />
 
               <label htmlFor="capexCadaNAnios" className="text-sm text-gray-700">CAPEX cada N años (0=off)</label>
-              <input id="capexCadaNAnios" type="number" min={0} step={1} value={capexCadaNAnios} onChange={e=>setCapexCadaNAnios(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <input id="capexCadaNAnios" type="number" min={0} step={1} value={capexCadaNAnios} onChange={e=>setCapexCadaNAnios(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
             </div>
             <p className="text-xs text-gray-600">Vacancia reduce la renta cobrada. Seguro/condominio/CAPEX se indexan por inflación.</p>
               </div>
@@ -571,7 +571,7 @@ export default function SimuladorCompraVsInversion() {
             <h3 className="font-medium text-blue-900">Impuestos – Arrendamiento</h3>
             <div className="grid grid-cols-2 items-center gap-2">
               <label htmlFor="modoArrISR" className="text-sm text-gray-700">Modo</label>
-              <select id="modoArrISR" value={modoArrISR} onChange={e=>setModoArrISR(e.target.value)} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <select id="modoArrISR" value={modoArrISR} onChange={e=>setModoArrISR(e.target.value)} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50 cursor-pointer">
                 <option value="ciega">Deducción ciega</option>
                 <option value="real">Gastos reales</option>
               </select>
@@ -579,12 +579,12 @@ export default function SimuladorCompraVsInversion() {
             {modoArrISR === "ciega" && (
               <div className="grid grid-cols-2 items-center gap-2 mt-2">
                 <label htmlFor="deduccionCiegaPct" className="text-sm text-gray-700">Deducción ciega (%)</label>
-                <input id="deduccionCiegaPct" type="number" min={0} step={0.1} value={deduccionCiegaPct} onChange={e=>setDeduccionCiegaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+                <input id="deduccionCiegaPct" type="number" min={0} step={0.1} value={deduccionCiegaPct} onChange={e=>setDeduccionCiegaPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
               </div>
             )}
             <div className="grid grid-cols-2 items-center gap-2 mt-2">
               <label htmlFor="isrRentaPct" className="text-sm text-gray-700">ISR sobre base (%)</label>
-              <input id="isrRentaPct" type="number" min={0} step={0.1} value={isrRentaPct} onChange={e=>setIsrRentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <input id="isrRentaPct" type="number" min={0} step={0.1} value={isrRentaPct} onChange={e=>setIsrRentaPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
             </div>
             <p className="text-xs text-gray-600">En "ciega" la base = ingreso × (1 − deducción). En "real" la base = ingreso − (mantenimiento + predial). El ISR se resta del flujo neto.</p>
               </div>
@@ -593,9 +593,9 @@ export default function SimuladorCompraVsInversion() {
             <h3 className="font-medium text-blue-900">Salida (venta)</h3>
             <div className="grid grid-cols-2 items-center gap-2">
               <label htmlFor="comisionVentaPct" className="text-sm text-gray-700">Comisión venta (% del precio)</label>
-              <input id="comisionVentaPct" type="number" min={0} step={0.1} value={comisionVentaPct} onChange={e=>setComisionVentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <input id="comisionVentaPct" type="number" min={0} step={0.1} value={comisionVentaPct} onChange={e=>setComisionVentaPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
               <label htmlFor="gastosVentaPct" className="text-sm text-gray-700">Gastos de venta (% del precio)</label>
-              <input id="gastosVentaPct" type="number" min={0} step={0.1} value={gastosVentaPct} onChange={e=>setGastosVentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <input id="gastosVentaPct" type="number" min={0} step={0.1} value={gastosVentaPct} onChange={e=>setGastosVentaPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
             </div>
             <p className="text-xs text-gray-600">Se descuenta una fricción de salida al final del horizonte (corretaje + gastos). No incluye ISR por enajenación.</p>
               </div>
@@ -618,11 +618,11 @@ export default function SimuladorCompraVsInversion() {
               locale={locale}
               min={0}
               decimals={0}
-              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
             />
 
             <label htmlFor="tasaCetesPct" className="text-sm text-gray-700">Tasa CETES (% nominal anual)</label>
-            <input id="tasaCetesPct" type="number" step={0.1} value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="tasaCetesPct" type="number" step={0.1} value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
             <label htmlFor="aportaE2Anual" className="text-sm text-gray-700">Aportación adicional ({moneda}/año)</label>
             <InputNumeroFormateado
@@ -631,12 +631,12 @@ export default function SimuladorCompraVsInversion() {
               onChangeValue={setAportaE2Anual}
               locale={locale}
               decimals={0}
-              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
             />
           </div>
 
           <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
-            <input id="rentaPagadaIndexa" type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} />
+            <input id="rentaPagadaIndexa" type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer" />
             <label htmlFor="rentaPagadaIndexa">Indexar renta por inflación</label>
               </div>
 
@@ -644,10 +644,10 @@ export default function SimuladorCompraVsInversion() {
             <h3 className="font-medium text-emerald-900">Impuestos – Intereses</h3>
             <div className="grid grid-cols-2 items-center gap-2">
               <label htmlFor="isrInteresesPct" className="text-sm text-gray-700">ISR intereses (%)</label>
-              <input id="isrInteresesPct" type="number" min={0} step={0.1} value={isrInteresesPct} onChange={e=>setIsrInteresesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <input id="isrInteresesPct" type="number" min={0} step={0.1} value={isrInteresesPct} onChange={e=>setIsrInteresesPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
             </div>
             <div className="inline-flex items-center space-x-2">
-              <input id="gravaInteresReal" type="checkbox" checked={gravaInteresReal} onChange={e=>setGravaInteresReal(e.target.checked)} />
+              <input id="gravaInteresReal" type="checkbox" checked={gravaInteresReal} onChange={e=>setGravaInteresReal(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer" />
               <label htmlFor="gravaInteresReal">Gravar solo interés real</label>
             </div>
             <p className="text-xs text-gray-600">Interés real ≈ interés − (inflación × capital). Si está activo, el ISR se calcula sobre el interés real no negativo.</p>
@@ -664,7 +664,7 @@ export default function SimuladorCompraVsInversion() {
               <p className="text-sm text-gray-600 pb-2 border-b">Define el plazo en años para la comparación. El simulador calculará el patrimonio neto al final de este periodo para ambos escenarios.</p>
               <div className="grid grid-cols-2 items-center gap-2">
             <label htmlFor="horizonte" className="text-sm text-gray-700">Años</label>
-            <input id="horizonte" type="number" min={1} step={1} value={horizonte} onChange={e=>setHorizonte(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <input id="horizonte" type="number" min={1} step={1} value={horizonte} onChange={e=>setHorizonte(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
               </div>
               <p className="text-xs text-gray-600">Se muestran resúmenes a 5, 10 y el horizonte elegido, además de dos gráficas.</p>
             </div>
