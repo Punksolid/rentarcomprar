@@ -14,8 +14,8 @@ function TooltipPatrimonio({ active, payload, label, mxn }) {
   return (
     <div className="bg-white border rounded-lg shadow px-3 py-2 text-sm">
       <div className="font-medium">Año {label}</div>
-      <div className="flex items-center justify-between gap-6"><span className="text-gray-600">E1 (Comprar)</span><span>{mxn.format(t1)}</span></div>
-      <div className="flex items-center justify-between gap-6"><span className="text-gray-600">E2 (Invertir)</span><span>{mxn.format(t2)}</span></div>
+      <div className="flex items-center justify-between gap-6"><span className="text-gray-600">Compra</span><span>{mxn.format(t1)}</span></div>
+      <div className="flex items-center justify-between gap-6"><span className="text-gray-600">Renta</span><span>{mxn.format(t2)}</span></div>
       <div className="mt-1 pt-1 border-t flex items-center justify-between gap-6">
         <span className="text-gray-600">Diferencia</span>
         <span className={diff >= 0 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>{mxn.format(diff)}</span>
@@ -180,6 +180,10 @@ export default function SimuladorCompraVsInversion() {
 
   const [horizonte, setHorizonte] = useState(10); // años
 
+  // Estado del wizard
+  const [pasoActual, setPasoActual] = useState(1);
+  const totalPasos = 4;
+
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
   const fmtAxis = (v) => {
@@ -192,7 +196,7 @@ export default function SimuladorCompraVsInversion() {
     const ganaE1 = diff >= 0;
     return {
       ganaE1,
-      titulo: ganaE1 ? "Gana E1" : "Gana E2",
+      titulo: ganaE1 ? "Gana Compra" : "Gana Renta",
       cardClass: ganaE1
         ? "border-blue-600 ring-blue-100"
         : "border-emerald-600 ring-emerald-100",
@@ -374,8 +378,9 @@ export default function SimuladorCompraVsInversion() {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Simulador genérico: Comprar inmueble vs Invertir en CETES</h1>
-          <p className="text-sm text-gray-600">Ajusta las variables. Todas impactan el resultado y las gráficas. El <b>Escenario 1</b> asume compra del inmueble y recepción de renta; el <b>Escenario 2</b> asume inversión financiera y pago de una renta de mercado.</p>
+          <h1 className="text-3xl font-bold text-gray-900">¿Comprar o Rentar?</h1>
+          <p className="text-lg text-gray-700 mt-2 font-medium">Simulador de inversión inmobiliaria vs inversión financiera</p>
+          <p className="text-sm text-gray-600 mt-3 max-w-3xl">Una de las decisiones financieras más importantes es elegir entre <b>comprar un inmueble para rentarlo</b> o <b>invertir ese capital y pagar renta</b>. Este simulador te ayuda a comparar ambos escenarios considerando todos los costos reales (mantenimiento, impuestos, vacancia, salida) y el valor del dinero en el tiempo, para que tomes la mejor decisión según tu contexto.</p>
         </div>
         <div className="bg-white shadow rounded-2xl p-3 border-t-4 border-slate-300 ring-1 ring-slate-100">
           <label htmlFor="moneda" className="text-xs text-gray-600 block mb-1">Moneda</label>
@@ -388,14 +393,68 @@ export default function SimuladorCompraVsInversion() {
         </div>
       </div>
 
-      {/* Controles principales */}
-      <div className="grid xl:grid-cols-4 lg:grid-cols-3 gap-6">
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-slate-300 ring-1 ring-slate-100">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Parámetros del activo</h2>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Activo</span>
+      {/* Wizard de parámetros */}
+      <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
+        {/* Indicador de progreso */}
+        <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b">
+          <div className="flex items-center justify-between max-w-3xl mx-auto">
+            {[
+              { num: 1, titulo: "Activo", color: "slate" },
+              { num: 2, titulo: "Escenario 1", color: "blue" },
+              { num: 3, titulo: "Escenario 2", color: "emerald" },
+              { num: 4, titulo: "Horizonte", color: "amber" },
+            ].map((paso, idx) => {
+              const activo = pasoActual === paso.num;
+              const completado = pasoActual > paso.num;
+              const colorClasses = {
+                slate: { activo: "bg-gray-700 text-white ring-4 ring-gray-200", completado: "bg-gray-600 text-white", linea: "bg-gray-400" },
+                blue: { activo: "bg-blue-600 text-white ring-4 ring-blue-100", completado: "bg-blue-500 text-white", linea: "bg-blue-400" },
+                emerald: { activo: "bg-emerald-700 text-white ring-4 ring-emerald-200", completado: "bg-emerald-600 text-white", linea: "bg-emerald-400" },
+                amber: { activo: "bg-amber-600 text-white ring-4 ring-amber-100", completado: "bg-amber-500 text-white", linea: "bg-amber-400" },
+              };
+              const colors = colorClasses[paso.color];
+              return (
+                <React.Fragment key={paso.num}>
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={() => setPasoActual(paso.num)}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                        activo ? colors.activo : completado ? colors.completado : "bg-gray-200 text-gray-500"
+                      }`}
+                    >
+                      {completado ? "✓" : paso.num}
+                    </button>
+                    <span
+                      className={`text-xs mt-1 font-medium ${
+                        activo ? "text-gray-900" : "text-gray-500"
+                      }`}
+                    >
+                      {paso.titulo}
+                    </span>
+                  </div>
+                  {idx < 3 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-2 ${
+                        completado ? colors.linea : "bg-gray-300"
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-2 items-center gap-2">
+        </div>
+
+        {/* Contenido del paso actual */}
+        <div className="p-6">
+          {pasoActual === 1 && (
+            <div className="max-w-2xl mx-auto space-y-3 border-t-4 border-gray-600 ring-1 ring-gray-100 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg">Parámetros del activo</h2>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">Activo</span>
+              </div>
+              <p className="text-sm text-gray-600 pb-2 border-b">Define las características del inmueble y los parámetros económicos generales (inflación, plusvalía) que afectan ambos escenarios.</p>
+              <div className="grid grid-cols-2 items-center gap-2">
             <label htmlFor="precio" className="text-sm text-gray-700">Precio del inmueble ({moneda})</label>
             <InputNumeroFormateado
               id="precio"
@@ -421,15 +480,18 @@ export default function SimuladorCompraVsInversion() {
 
             <label htmlFor="plusvaliaRealPct" className="text-sm text-gray-700">Plusvalía real (% adicional)</label>
             <input id="plusvaliaRealPct" type="number" step={0.1} value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
-          </div>
-        </div>
+              </div>
+            </div>
+          )}
 
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-blue-600 ring-1 ring-blue-100">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Escenario 1 · Comprar y alquilar</h2>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">E1</span>
-          </div>
-          <div className="grid grid-cols-2 items-center gap-2">
+          {pasoActual === 2 && (
+            <div className="max-w-2xl mx-auto space-y-3 border-t-4 border-blue-600 ring-1 ring-blue-100 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg">Escenario Compra · Comprar y rentar el inmueble</h2>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">Compra</span>
+              </div>
+              <p className="text-sm text-gray-600 pb-2 border-b">Compras el inmueble y lo rentas a un tercero. Define los ingresos por renta, costos operativos (seguro, condominio, mantenimiento, vacancia), impuestos y los costos de salida al vender.</p>
+              <div className="grid grid-cols-2 items-center gap-2">
             <label htmlFor="rentaRecibidaMensual" className="text-sm text-gray-700">Renta recibida ({moneda}/mes)</label>
             <InputNumeroFormateado
               id="rentaRecibidaMensual"
@@ -458,9 +520,9 @@ export default function SimuladorCompraVsInversion() {
           <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
             <input id="rentaRecibidaIndexa" type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} />
             <label htmlFor="rentaRecibidaIndexa">Indexar renta por inflación</label>
-          </div>
+              </div>
 
-          <div className="pt-2 border-t border-blue-100 space-y-2">
+              <div className="pt-2 border-t border-blue-100 space-y-2">
             <h3 className="font-medium text-blue-900">Costos operativos</h3>
             <div className="grid grid-cols-2 items-center gap-2">
               <label htmlFor="seguroAnual" className="text-sm text-gray-700">Seguro ({moneda}/año)</label>
@@ -503,9 +565,9 @@ export default function SimuladorCompraVsInversion() {
               <input id="capexCadaNAnios" type="number" min={0} step={1} value={capexCadaNAnios} onChange={e=>setCapexCadaNAnios(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
             </div>
             <p className="text-xs text-gray-600">Vacancia reduce la renta cobrada. Seguro/condominio/CAPEX se indexan por inflación.</p>
-          </div>
+              </div>
 
-          <div className="pt-2 border-t border-blue-100">
+              <div className="pt-2 border-t border-blue-100">
             <h3 className="font-medium text-blue-900">Impuestos – Arrendamiento</h3>
             <div className="grid grid-cols-2 items-center gap-2">
               <label htmlFor="modoArrISR" className="text-sm text-gray-700">Modo</label>
@@ -525,9 +587,9 @@ export default function SimuladorCompraVsInversion() {
               <input id="isrRentaPct" type="number" min={0} step={0.1} value={isrRentaPct} onChange={e=>setIsrRentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
             </div>
             <p className="text-xs text-gray-600">En "ciega" la base = ingreso × (1 − deducción). En "real" la base = ingreso − (mantenimiento + predial). El ISR se resta del flujo neto.</p>
-          </div>
+              </div>
 
-          <div className="pt-2 border-t border-blue-100">
+              <div className="pt-2 border-t border-blue-100">
             <h3 className="font-medium text-blue-900">Salida (venta)</h3>
             <div className="grid grid-cols-2 items-center gap-2">
               <label htmlFor="comisionVentaPct" className="text-sm text-gray-700">Comisión venta (% del precio)</label>
@@ -536,15 +598,18 @@ export default function SimuladorCompraVsInversion() {
               <input id="gastosVentaPct" type="number" min={0} step={0.1} value={gastosVentaPct} onChange={e=>setGastosVentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
             </div>
             <p className="text-xs text-gray-600">Se descuenta una fricción de salida al final del horizonte (corretaje + gastos). No incluye ISR por enajenación.</p>
-          </div>
-        </div>
+              </div>
+            </div>
+          )}
 
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-emerald-600 ring-1 ring-emerald-100">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Escenario 2 · Inversión y alquiler</h2>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">E2</span>
-          </div>
-          <div className="grid grid-cols-2 items-center gap-2">
+          {pasoActual === 3 && (
+            <div className="max-w-2xl mx-auto space-y-3 border-t-4 border-emerald-700 ring-1 ring-emerald-100 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg">Escenario Renta · Invertir y pagar renta</h2>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Renta</span>
+              </div>
+              <p className="text-sm text-gray-600 pb-2 border-b">En lugar de comprar, inviertes el mismo capital inicial en CETES y pagas renta de mercado. Define la renta pagada, tasa de rendimiento de CETES e impuestos sobre intereses.</p>
+              <div className="grid grid-cols-2 items-center gap-2">
             <label htmlFor="rentaPagadaMensual" className="text-sm text-gray-700">Renta pagada ({moneda}/mes)</label>
             <InputNumeroFormateado
               id="rentaPagadaMensual"
@@ -573,9 +638,9 @@ export default function SimuladorCompraVsInversion() {
           <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
             <input id="rentaPagadaIndexa" type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} />
             <label htmlFor="rentaPagadaIndexa">Indexar renta por inflación</label>
-          </div>
+              </div>
 
-          <div className="pt-2 border-t border-emerald-100">
+              <div className="pt-2 border-t border-emerald-100">
             <h3 className="font-medium text-emerald-900">Impuestos – Intereses</h3>
             <div className="grid grid-cols-2 items-center gap-2">
               <label htmlFor="isrInteresesPct" className="text-sm text-gray-700">ISR intereses (%)</label>
@@ -586,19 +651,55 @@ export default function SimuladorCompraVsInversion() {
               <label htmlFor="gravaInteresReal">Gravar solo interés real</label>
             </div>
             <p className="text-xs text-gray-600">Interés real ≈ interés − (inflación × capital). Si está activo, el ISR se calcula sobre el interés real no negativo.</p>
-          </div>
-        </div>
+              </div>
+            </div>
+          )}
 
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-amber-500 ring-1 ring-amber-100">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Horizonte</h2>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">Tiempo</span>
-          </div>
-          <div className="grid grid-cols-2 items-center gap-2">
+          {pasoActual === 4 && (
+            <div className="max-w-2xl mx-auto space-y-3 border-t-4 border-amber-500 ring-1 ring-amber-100 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg">Horizonte de inversión</h2>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">Tiempo</span>
+              </div>
+              <p className="text-sm text-gray-600 pb-2 border-b">Define el plazo en años para la comparación. El simulador calculará el patrimonio neto al final de este periodo para ambos escenarios.</p>
+              <div className="grid grid-cols-2 items-center gap-2">
             <label htmlFor="horizonte" className="text-sm text-gray-700">Años</label>
             <input id="horizonte" type="number" min={1} step={1} value={horizonte} onChange={e=>setHorizonte(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              </div>
+              <p className="text-xs text-gray-600">Se muestran resúmenes a 5, 10 y el horizonte elegido, además de dos gráficas.</p>
+            </div>
+          )}
+
+          {/* Navegación del wizard */}
+          <div className="flex items-center justify-between mt-8 pt-6 border-t max-w-2xl mx-auto">
+            <button
+              onClick={() => setPasoActual(Math.max(1, pasoActual - 1))}
+              disabled={pasoActual === 1}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                pasoActual === 1
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50"
+              }`}
+            >
+              ← Anterior
+            </button>
+
+            <div className="text-sm text-gray-600">
+              Paso {pasoActual} de {totalPasos}
+            </div>
+
+            <button
+              onClick={() => setPasoActual(Math.min(totalPasos, pasoActual + 1))}
+              disabled={pasoActual === totalPasos}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                pasoActual === totalPasos
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              {pasoActual === totalPasos ? "Finalizado ✓" : "Siguiente →"}
+            </button>
           </div>
-          <p className="text-xs text-gray-600">Se muestran resúmenes a 5, 10 y el horizonte elegido, además de dos gráficas.</p>
         </div>
       </div>
 
@@ -613,8 +714,8 @@ export default function SimuladorCompraVsInversion() {
               <YAxis tickFormatter={fmtAxis} width={110} />
               <Tooltip content={<TooltipPatrimonio mxn={mxn} />} />
               <Legend />
-              <Line type="monotone" dataKey="totalEsc1" name="Escenario 1: Comprar" dot={false} stroke="#2563eb" strokeWidth={2} />
-              <Line type="monotone" dataKey="totalEsc2" name="Escenario 2: Inversión" dot={false} stroke="#10b981" strokeWidth={2} />
+              <Line type="monotone" dataKey="totalEsc1" name="Compra" dot={false} stroke="#2563eb" strokeWidth={2} />
+              <Line type="monotone" dataKey="totalEsc2" name="Renta" dot={false} stroke="#059669" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -632,8 +733,8 @@ export default function SimuladorCompraVsInversion() {
               <Tooltip formatter={(v)=>mxn.format(Number(v))} labelFormatter={(l)=>`Año ${l}`} />
               <Legend />
               <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="4 4" />
-              <Bar dataKey="flowEsc1" name="Flujo E1 (Comprar)" fill="#2563eb" />
-              <Bar dataKey="flowEsc2" name="Flujo E2 (Inversión)" fill="#10b981" />
+              <Bar dataKey="flowEsc1" name="Flujo Compra" fill="#2563eb" />
+              <Bar dataKey="flowEsc2" name="Flujo Renta" fill="#059669" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -660,8 +761,8 @@ export default function SimuladorCompraVsInversion() {
             </span>
           </div>
           <div className="space-y-1">
-            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(r5.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r5.e1.valorCasaFinal)}, Efectivo {mxn.format(r5.e1.efectivoAcumulado)}, Salida −{mxn.format(r5.e1.costoSalida)})</span></div>
-            <div><b>Escenario 2:</b> Capital final {mxn.format(r5.e2.capitalFinal)}</div>
+            <div><b>Compra:</b> Patrimonio total {mxn.format(r5.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r5.e1.valorCasaFinal)}, Efectivo {mxn.format(r5.e1.efectivoAcumulado)}, Salida −{mxn.format(r5.e1.costoSalida)})</span></div>
+            <div><b>Renta:</b> Capital final {mxn.format(r5.e2.capitalFinal)}</div>
             <div className={(r5.e1.patrimonioTotal - r5.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(r5.e1.patrimonioTotal - r5.e2.capitalFinal)}</div>
           </div>
         </div>
@@ -684,8 +785,8 @@ export default function SimuladorCompraVsInversion() {
             </span>
           </div>
           <div className="space-y-1">
-            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(r10.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r10.e1.valorCasaFinal)}, Efectivo {mxn.format(r10.e1.efectivoAcumulado)}, Salida −{mxn.format(r10.e1.costoSalida)})</span></div>
-            <div><b>Escenario 2:</b> Capital final {mxn.format(r10.e2.capitalFinal)}</div>
+            <div><b>Compra:</b> Patrimonio total {mxn.format(r10.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r10.e1.valorCasaFinal)}, Efectivo {mxn.format(r10.e1.efectivoAcumulado)}, Salida −{mxn.format(r10.e1.costoSalida)})</span></div>
+            <div><b>Renta:</b> Capital final {mxn.format(r10.e2.capitalFinal)}</div>
             <div className={(r10.e1.patrimonioTotal - r10.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(r10.e1.patrimonioTotal - r10.e2.capitalFinal)}</div>
           </div>
         </div>
@@ -708,8 +809,8 @@ export default function SimuladorCompraVsInversion() {
             </span>
           </div>
           <div className="space-y-1">
-            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(rh.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(rh.e1.valorCasaFinal)}, Efectivo {mxn.format(rh.e1.efectivoAcumulado)}, Salida −{mxn.format(rh.e1.costoSalida)})</span></div>
-            <div><b>Escenario 2:</b> Capital final {mxn.format(rh.e2.capitalFinal)}</div>
+            <div><b>Compra:</b> Patrimonio total {mxn.format(rh.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(rh.e1.valorCasaFinal)}, Efectivo {mxn.format(rh.e1.efectivoAcumulado)}, Salida −{mxn.format(rh.e1.costoSalida)})</span></div>
+            <div><b>Renta:</b> Capital final {mxn.format(rh.e2.capitalFinal)}</div>
             <div className={(rh.e1.patrimonioTotal - rh.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(rh.e1.patrimonioTotal - rh.e2.capitalFinal)}</div>
           </div>
         </div>
