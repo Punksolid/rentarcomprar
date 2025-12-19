@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, BarChart, Bar, ReferenceLine } from "recharts";
 
 function TooltipPatrimonio({ active, payload, label, mxn }) {
@@ -24,11 +24,113 @@ function TooltipPatrimonio({ active, payload, label, mxn }) {
   );
 }
 
+function normalizarNumeroDeInput(texto) {
+  const raw = String(texto ?? "")
+    .replace(/\s+/g, "")
+    .replace(/[^0-9,.-]/g, "");
+
+  if (!raw) return "";
+
+  // Mantén un único signo negativo al inicio
+  let s = raw.replace(/(?!^)-/g, "");
+  const negativo = s.startsWith("-");
+  s = s.replace(/-/g, "");
+
+  const lastDot = s.lastIndexOf(".");
+  const lastComma = s.lastIndexOf(",");
+  const sepIndex = Math.max(lastDot, lastComma);
+
+  let entero = s;
+  let dec = "";
+  if (sepIndex >= 0) {
+    entero = s.slice(0, sepIndex);
+    dec = s.slice(sepIndex + 1);
+  }
+
+  entero = entero.replace(/[.,]/g, "");
+  dec = dec.replace(/[.,]/g, "");
+
+  const out = dec ? `${entero}.${dec}` : entero;
+  return negativo ? `-${out}` : out;
+}
+
+function InputNumeroFormateado({
+  id,
+  value,
+  onChangeValue,
+  locale,
+  min,
+  max,
+  decimals = 0,
+  className,
+}) {
+  const [focused, setFocused] = useState(false);
+  const [texto, setTexto] = useState("");
+
+  const fmt = useMemo(() => {
+    return new Intl.NumberFormat(locale, {
+      useGrouping: true,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }, [locale, decimals]);
+
+  useEffect(() => {
+    if (focused) return;
+    if (!Number.isFinite(value)) {
+      setTexto("");
+      return;
+    }
+    setTexto(fmt.format(value));
+  }, [value, fmt, focused]);
+
+  const commit = (nextText) => {
+    const normalizado = normalizarNumeroDeInput(nextText);
+    if (normalizado === "" || normalizado === "-" || normalizado === ".") {
+      onChangeValue(0);
+      return;
+    }
+    let n = Number(normalizado);
+    if (!Number.isFinite(n)) n = 0;
+    if (Number.isFinite(min)) n = Math.max(min, n);
+    if (Number.isFinite(max)) n = Math.min(max, n);
+    onChangeValue(n);
+  };
+
+  return (
+    <input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      value={texto}
+      onFocus={() => {
+        setFocused(true);
+        const v = Number.isFinite(value) ? value : 0;
+        setTexto(String(v));
+      }}
+      onBlur={() => {
+        setFocused(false);
+        const v = Number.isFinite(value) ? value : 0;
+        setTexto(fmt.format(v));
+      }}
+      onChange={(e) => {
+        const next = e.target.value;
+        setTexto(next);
+        commit(next);
+      }}
+      className={className}
+    />
+  );
+}
+
 export default function SimuladorCompraVsInversion() {
-  const mxn = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
-  const mxnCompacto = new Intl.NumberFormat("es-MX", {
+  const locale = "es-MX";
+  const [moneda, setMoneda] = useState("MXN");
+
+  const mxn = new Intl.NumberFormat(locale, { style: "currency", currency: moneda });
+  const mxnCompacto = new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: "MXN",
+    currency: moneda,
     notation: "compact",
     compactDisplay: "short",
     maximumFractionDigits: 1,
@@ -270,8 +372,21 @@ export default function SimuladorCompraVsInversion() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Simulador genérico: Comprar inmueble vs Invertir en CETES</h1>
-      <p className="text-sm text-gray-600">Ajusta las variables. Todas impactan el resultado y las gráficas. El <b>Escenario 1</b> asume compra del inmueble y recepción de renta; el <b>Escenario 2</b> asume inversión financiera y pago de una renta de mercado.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Simulador genérico: Comprar inmueble vs Invertir en CETES</h1>
+          <p className="text-sm text-gray-600">Ajusta las variables. Todas impactan el resultado y las gráficas. El <b>Escenario 1</b> asume compra del inmueble y recepción de renta; el <b>Escenario 2</b> asume inversión financiera y pago de una renta de mercado.</p>
+        </div>
+        <div className="bg-white shadow rounded-2xl p-3 border-t-4 border-slate-300 ring-1 ring-slate-100">
+          <label htmlFor="moneda" className="text-xs text-gray-600 block mb-1">Moneda</label>
+          <select id="moneda" value={moneda} onChange={(e) => setMoneda(e.target.value)} className="border rounded px-2 py-1 w-32 focus:outline-none focus:ring-2 focus:ring-blue-200">
+            <option value="MXN">MXN</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+          <p className="text-[11px] text-gray-500 mt-1">Solo cambia el formato; no convierte montos.</p>
+        </div>
+      </div>
 
       {/* Controles principales */}
       <div className="grid xl:grid-cols-4 lg:grid-cols-3 gap-6">
@@ -281,8 +396,16 @@ export default function SimuladorCompraVsInversion() {
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Activo</span>
           </div>
           <div className="grid grid-cols-2 items-center gap-2">
-            <label htmlFor="precio" className="text-sm text-gray-700">Precio del inmueble (MXN)</label>
-            <input id="precio" type="number" min={0} value={precio} onChange={e=>setPrecio(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <label htmlFor="precio" className="text-sm text-gray-700">Precio del inmueble ({moneda})</label>
+            <InputNumeroFormateado
+              id="precio"
+              value={precio}
+              onChangeValue={setPrecio}
+              locale={locale}
+              min={0}
+              decimals={0}
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
 
             <label htmlFor="gastosPct" className="text-sm text-gray-700">Gastos de compra (% del precio)</label>
             <input id="gastosPct" type="number" min={0} step={0.1} value={gastosPct} onChange={e=>setGastosPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
@@ -307,14 +430,29 @@ export default function SimuladorCompraVsInversion() {
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">E1</span>
           </div>
           <div className="grid grid-cols-2 items-center gap-2">
-            <label htmlFor="rentaRecibidaMensual" className="text-sm text-gray-700">Renta recibida (MXN/mes)</label>
-            <input id="rentaRecibidaMensual" type="number" min={0} value={rentaRecibidaMensual} onChange={e=>setRentaRecibidaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <label htmlFor="rentaRecibidaMensual" className="text-sm text-gray-700">Renta recibida ({moneda}/mes)</label>
+            <InputNumeroFormateado
+              id="rentaRecibidaMensual"
+              value={rentaRecibidaMensual}
+              onChangeValue={setRentaRecibidaMensual}
+              locale={locale}
+              min={0}
+              decimals={0}
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
 
             <label htmlFor="vacanciaMesesAnual" className="text-sm text-gray-700">Vacancia (meses sin cobrar/año)</label>
             <input id="vacanciaMesesAnual" type="number" min={0} max={12} step={0.5} value={vacanciaMesesAnual} onChange={e=>setVacanciaMesesAnual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
 
-            <label htmlFor="aportaE1Anual" className="text-sm text-gray-700">Aportación adicional (MXN/año)</label>
-            <input id="aportaE1Anual" type="number" value={aportaE1Anual} onChange={e=>setAportaE1Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <label htmlFor="aportaE1Anual" className="text-sm text-gray-700">Aportación adicional ({moneda}/año)</label>
+            <InputNumeroFormateado
+              id="aportaE1Anual"
+              value={aportaE1Anual}
+              onChangeValue={setAportaE1Anual}
+              locale={locale}
+              decimals={0}
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
           </div>
 
           <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
@@ -325,17 +463,41 @@ export default function SimuladorCompraVsInversion() {
           <div className="pt-2 border-t border-blue-100 space-y-2">
             <h3 className="font-medium text-blue-900">Costos operativos</h3>
             <div className="grid grid-cols-2 items-center gap-2">
-              <label htmlFor="seguroAnual" className="text-sm text-gray-700">Seguro (MXN/año)</label>
-              <input id="seguroAnual" type="number" min={0} value={seguroAnual} onChange={e=>setSeguroAnual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <label htmlFor="seguroAnual" className="text-sm text-gray-700">Seguro ({moneda}/año)</label>
+              <InputNumeroFormateado
+                id="seguroAnual"
+                value={seguroAnual}
+                onChangeValue={setSeguroAnual}
+                locale={locale}
+                min={0}
+                decimals={0}
+                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
 
-              <label htmlFor="condominioMensual" className="text-sm text-gray-700">Condominio/HOA (MXN/mes)</label>
-              <input id="condominioMensual" type="number" min={0} value={condominioMensual} onChange={e=>setCondominioMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <label htmlFor="condominioMensual" className="text-sm text-gray-700">Condominio/HOA ({moneda}/mes)</label>
+              <InputNumeroFormateado
+                id="condominioMensual"
+                value={condominioMensual}
+                onChangeValue={setCondominioMensual}
+                locale={locale}
+                min={0}
+                decimals={0}
+                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
 
               <label htmlFor="adminPctRenta" className="text-sm text-gray-700">Administración (% de renta cobrada)</label>
               <input id="adminPctRenta" type="number" min={0} step={0.1} value={adminPctRenta} onChange={e=>setAdminPctRenta(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
 
-              <label htmlFor="capexMonto" className="text-sm text-gray-700">CAPEX (MXN)</label>
-              <input id="capexMonto" type="number" min={0} value={capexMonto} onChange={e=>setCapexMonto(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <label htmlFor="capexMonto" className="text-sm text-gray-700">CAPEX ({moneda})</label>
+              <InputNumeroFormateado
+                id="capexMonto"
+                value={capexMonto}
+                onChangeValue={setCapexMonto}
+                locale={locale}
+                min={0}
+                decimals={0}
+                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
 
               <label htmlFor="capexCadaNAnios" className="text-sm text-gray-700">CAPEX cada N años (0=off)</label>
               <input id="capexCadaNAnios" type="number" min={0} step={1} value={capexCadaNAnios} onChange={e=>setCapexCadaNAnios(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
@@ -383,14 +545,29 @@ export default function SimuladorCompraVsInversion() {
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">E2</span>
           </div>
           <div className="grid grid-cols-2 items-center gap-2">
-            <label htmlFor="rentaPagadaMensual" className="text-sm text-gray-700">Renta pagada (MXN/mes)</label>
-            <input id="rentaPagadaMensual" type="number" min={0} value={rentaPagadaMensual} onChange={e=>setRentaPagadaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <label htmlFor="rentaPagadaMensual" className="text-sm text-gray-700">Renta pagada ({moneda}/mes)</label>
+            <InputNumeroFormateado
+              id="rentaPagadaMensual"
+              value={rentaPagadaMensual}
+              onChangeValue={setRentaPagadaMensual}
+              locale={locale}
+              min={0}
+              decimals={0}
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
 
             <label htmlFor="tasaCetesPct" className="text-sm text-gray-700">Tasa CETES (% nominal anual)</label>
             <input id="tasaCetesPct" type="number" step={0.1} value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
 
-            <label htmlFor="aportaE2Anual" className="text-sm text-gray-700">Aportación adicional (MXN/año)</label>
-            <input id="aportaE2Anual" type="number" value={aportaE2Anual} onChange={e=>setAportaE2Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            <label htmlFor="aportaE2Anual" className="text-sm text-gray-700">Aportación adicional ({moneda}/año)</label>
+            <InputNumeroFormateado
+              id="aportaE2Anual"
+              value={aportaE2Anual}
+              onChangeValue={setAportaE2Anual}
+              locale={locale}
+              decimals={0}
+              className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
           </div>
 
           <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
