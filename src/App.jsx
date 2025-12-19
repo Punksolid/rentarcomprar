@@ -1,8 +1,38 @@
+/* eslint-disable react/prop-types */
 import React, { useMemo, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, BarChart, Bar, ReferenceLine } from "recharts";
+
+function TooltipPatrimonio({ active, payload, label, mxn }) {
+  if (!active || !payload?.length) return null;
+  const p = payload.reduce((acc, item) => {
+    acc[item.dataKey] = Number(item.value);
+    return acc;
+  }, {});
+  const t1 = Number.isFinite(p.totalEsc1) ? p.totalEsc1 : 0;
+  const t2 = Number.isFinite(p.totalEsc2) ? p.totalEsc2 : 0;
+  const diff = t1 - t2;
+  return (
+    <div className="bg-white border rounded-lg shadow px-3 py-2 text-sm">
+      <div className="font-medium">Año {label}</div>
+      <div className="flex items-center justify-between gap-6"><span className="text-gray-600">E1 (Comprar)</span><span>{mxn.format(t1)}</span></div>
+      <div className="flex items-center justify-between gap-6"><span className="text-gray-600">E2 (Invertir)</span><span>{mxn.format(t2)}</span></div>
+      <div className="mt-1 pt-1 border-t flex items-center justify-between gap-6">
+        <span className="text-gray-600">Diferencia</span>
+        <span className={diff >= 0 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>{mxn.format(diff)}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function SimuladorCompraVsInversion() {
   const mxn = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
+  const mxnCompacto = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    notation: "compact",
+    compactDisplay: "short",
+    maximumFractionDigits: 1,
+  });
 
   // Parámetros base
   const [precio, setPrecio] = useState(2_000_000); // Precio del inmueble
@@ -12,6 +42,18 @@ export default function SimuladorCompraVsInversion() {
   const [tasaCetesPct, setTasaCetesPct] = useState(6); // % nominal anual inversión
   const [predialPct, setPredialPct] = useState(0.2);   // % anual sobre valor del inmueble
   const [mantenMeses, setMantenMeses] = useState(1);   // meses de renta por año como mantenimiento
+
+  // Costos operativos adicionales (Escenario 1)
+  const [vacanciaMesesAnual, setVacanciaMesesAnual] = useState(0); // meses/año sin cobrar renta
+  const [seguroAnual, setSeguroAnual] = useState(0); // MXN/año
+  const [condominioMensual, setCondominioMensual] = useState(0); // MXN/mes
+  const [adminPctRenta, setAdminPctRenta] = useState(0); // % sobre renta cobrada
+  const [capexMonto, setCapexMonto] = useState(0); // MXN
+  const [capexCadaNAnios, setCapexCadaNAnios] = useState(0); // 0 = desactivado
+
+  // Costos de salida (Escenario 1)
+  const [comisionVentaPct, setComisionVentaPct] = useState(5); // % sobre precio de venta
+  const [gastosVentaPct, setGastosVentaPct] = useState(1.5); // % sobre precio de venta
 
   // Impuestos
   // Arrendamiento (Escenario 1)
@@ -36,22 +78,58 @@ export default function SimuladorCompraVsInversion() {
 
   const [horizonte, setHorizonte] = useState(10); // años
 
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  const fmtAxis = (v) => {
+    const abs = Math.abs(Number(v));
+    if (abs >= 1_000_000) return mxnCompacto.format(Number(v));
+    return mxn.format(Number(v));
+  };
+
+  const ganadorMeta = (diff) => {
+    const ganaE1 = diff >= 0;
+    return {
+      ganaE1,
+      titulo: ganaE1 ? "Gana E1" : "Gana E2",
+      cardClass: ganaE1
+        ? "border-blue-600 ring-blue-100"
+        : "border-emerald-600 ring-emerald-100",
+      badgeClass: ganaE1
+        ? "bg-blue-50 text-blue-700"
+        : "bg-emerald-50 text-emerald-700",
+    };
+  };
+
   function simularEscenario1(anios) {
     const infl = inflacionPct / 100;
     const plus = plusvaliaRealPct / 100;
     const pred = predialPct / 100;
     const gastos = precio * (gastosPct / 100);
 
+    const vacMeses = clamp(vacanciaMesesAnual, 0, 12);
+    const factorCobro = (12 - vacMeses) / 12;
+    const adminPct = clamp(adminPctRenta, 0, 100) / 100;
+    const comVenta = clamp(comisionVentaPct, 0, 100) / 100;
+    const gasVenta = clamp(gastosVentaPct, 0, 100) / 100;
+
     let valorCasa = precio;           // valor del activo
     let efectivo = -gastos;           // egresos iniciales (escrituras, impuestos, avalúo, etc.)
     let renta = rentaRecibidaMensual; // renta mensual recibida
 
+    let seguro = seguroAnual;
+    let condominio = condominioMensual;
+    let capex = capexMonto;
+
     const rows = [];
 
     for (let a = 1; a <= anios; a++) {
-      const rentaAnual = renta * 12;
+      const rentaAnualBruta = renta * 12;
+      const rentaAnual = rentaAnualBruta * factorCobro;
       const mantenimiento = renta * mantenMeses; // meses de renta por año
       const predial = pred * valorCasa;
+      const administracion = rentaAnual * adminPct;
+      const condominioAnual = condominio * 12;
+      const capexAnual = capexCadaNAnios > 0 && a % capexCadaNAnios === 0 ? capex : 0;
 
       // ISR por arrendamiento (dos modos)
       let baseISR = 0;
@@ -64,23 +142,35 @@ export default function SimuladorCompraVsInversion() {
       }
       const isrRenta = baseISR * (isrRentaPct / 100);
 
-      const neto = rentaAnual - mantenimiento - predial - isrRenta + aportaE1Anual; // flujo neto del año
+      const neto = rentaAnual - mantenimiento - predial - administracion - seguro - condominioAnual - capexAnual - isrRenta + aportaE1Anual; // flujo neto del año
       efectivo += neto;
 
       // registrar estado al cierre del año (antes de apreciar valor siguiente año)
       const total = valorCasa + efectivo;
-      rows.push({ anio: a, rentaAnual, mantenimiento, predial, isrRenta, neto, valorCasa, efectivo, total });
+      rows.push({ anio: a, rentaAnualBruta, rentaAnual, mantenimiento, predial, administracion, seguro, condominioAnual, capexAnual, isrRenta, neto, valorCasa, efectivo, total });
 
       // actualización de variables para el siguiente año
       valorCasa *= (1 + infl) * (1 + plus);
       if (rentaRecibidaIndexa) renta *= (1 + infl);
+      if (seguro > 0) seguro *= (1 + infl);
+      if (condominio > 0) condominio *= (1 + infl);
+      if (capex > 0) capex *= (1 + infl);
     }
 
-    const last = rows[rows.length - 1];
+    const last = rows.at(-1);
+    const valorCasaFinal = last?.valorCasa ?? valorCasa;
+    const efectivoAcumulado = last?.efectivo ?? efectivo;
+    const patrimonioBruto = last?.total ?? valorCasaFinal + efectivoAcumulado;
+
+    const costoSalida = valorCasaFinal * (comVenta + gasVenta);
+    const patrimonioNeto = patrimonioBruto - costoSalida;
+
     return {
-      valorCasaFinal: last?.valorCasa ?? valorCasa,
-      efectivoAcumulado: last?.efectivo ?? efectivo,
-      patrimonioTotal: last?.total ?? valorCasa + efectivo,
+      valorCasaFinal,
+      efectivoAcumulado,
+      patrimonioBruto,
+      costoSalida,
+      patrimonioTotal: patrimonioNeto,
       detalle: rows,
     };
   }
@@ -112,7 +202,7 @@ export default function SimuladorCompraVsInversion() {
       if (rentaPagadaIndexa) renta *= (1 + infl);
     }
 
-    const last = rows[rows.length - 1];
+    const last = rows.at(-1);
     return {
       capitalFinal: last?.capital ?? capital,
       detalle: rows,
@@ -133,8 +223,8 @@ export default function SimuladorCompraVsInversion() {
       const p2 = e2.detalle[i];
       data.push({
         anio: (i + 1).toString(),
-        totalEsc1: p1 ? p1.total : (e1.detalle[e1.detalle.length - 1]?.total ?? 0),
-        totalEsc2: p2 ? p2.capital : (e2.detalle[e2.detalle.length - 1]?.capital ?? 0),
+        totalEsc1: p1 ? p1.total : (e1.detalle.at(-1)?.total ?? 0),
+        totalEsc2: p2 ? p2.capital : (e2.detalle.at(-1)?.capital ?? 0),
       });
       dataFlow.push({
         anio: (i + 1).toString(),
@@ -146,9 +236,37 @@ export default function SimuladorCompraVsInversion() {
     return { e1, e2, data, dataFlow };
   }
 
-  const r5 = useMemo(() => construirSerie(5), [precio, gastosPct, inflacionPct, plusvaliaRealPct, tasaCetesPct, predialPct, mantenMeses, rentaRecibidaMensual, rentaRecibidaIndexa, rentaPagadaMensual, rentaPagadaIndexa, aportaE1Anual, aportaE2Anual, modoArrISR, deduccionCiegaPct, isrRentaPct, isrInteresesPct, gravaInteresReal]);
-  const r10 = useMemo(() => construirSerie(10), [precio, gastosPct, inflacionPct, plusvaliaRealPct, tasaCetesPct, predialPct, mantenMeses, rentaRecibidaMensual, rentaRecibidaIndexa, rentaPagadaMensual, rentaPagadaIndexa, aportaE1Anual, aportaE2Anual, modoArrISR, deduccionCiegaPct, isrRentaPct, isrInteresesPct, gravaInteresReal]);
-  const rh = useMemo(() => construirSerie(horizonte), [precio, gastosPct, inflacionPct, plusvaliaRealPct, tasaCetesPct, predialPct, mantenMeses, rentaRecibidaMensual, rentaRecibidaIndexa, rentaPagadaMensual, rentaPagadaIndexa, aportaE1Anual, aportaE2Anual, modoArrISR, deduccionCiegaPct, isrRentaPct, isrInteresesPct, gravaInteresReal, horizonte]);
+  const deps = [
+    precio,
+    gastosPct,
+    inflacionPct,
+    plusvaliaRealPct,
+    tasaCetesPct,
+    predialPct,
+    mantenMeses,
+    rentaRecibidaMensual,
+    rentaRecibidaIndexa,
+    rentaPagadaMensual,
+    rentaPagadaIndexa,
+    aportaE1Anual,
+    aportaE2Anual,
+    modoArrISR,
+    deduccionCiegaPct,
+    isrRentaPct,
+    isrInteresesPct,
+    gravaInteresReal,
+    vacanciaMesesAnual,
+    seguroAnual,
+    condominioMensual,
+    adminPctRenta,
+    capexMonto,
+    capexCadaNAnios,
+    comisionVentaPct,
+    gastosVentaPct,
+  ];
+  const r5 = useMemo(() => construirSerie(5), deps);
+  const r10 = useMemo(() => construirSerie(10), deps);
+  const rh = useMemo(() => construirSerie(horizonte), [...deps, horizonte]);
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -157,56 +275,152 @@ export default function SimuladorCompraVsInversion() {
 
       {/* Controles principales */}
       <div className="grid xl:grid-cols-4 lg:grid-cols-3 gap-6">
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3">
-          <h2 className="font-semibold">Parámetros del activo</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Precio del inmueble</label><input type="number" value={precio} onChange={e=>setPrecio(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Gastos de compra (%)</label><input type="number" value={gastosPct} onChange={e=>setGastosPct(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Predial anual (%)</label><input type="number" value={predialPct} onChange={e=>setPredialPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Mantenimiento (meses renta/año)</label><input type="number" min={0} step={0.1} value={mantenMeses} onChange={e=>setMantenMeses(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Inflación anual (%)</label><input type="number" value={inflacionPct} onChange={e=>setInflacionPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Plusvalía real (%)</label><input type="number" value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
+        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-slate-300 ring-1 ring-slate-100">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Parámetros del activo</h2>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Activo</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-2">
+            <label htmlFor="precio" className="text-sm text-gray-700">Precio del inmueble (MXN)</label>
+            <input id="precio" type="number" min={0} value={precio} onChange={e=>setPrecio(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+            <label htmlFor="gastosPct" className="text-sm text-gray-700">Gastos de compra (% del precio)</label>
+            <input id="gastosPct" type="number" min={0} step={0.1} value={gastosPct} onChange={e=>setGastosPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+            <label htmlFor="predialPct" className="text-sm text-gray-700">Predial anual (% del valor)</label>
+            <input id="predialPct" type="number" min={0} step={0.01} value={predialPct} onChange={e=>setPredialPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+            <label htmlFor="mantenMeses" className="text-sm text-gray-700">Mantenimiento (meses renta/año)</label>
+            <input id="mantenMeses" type="number" min={0} step={0.1} value={mantenMeses} onChange={e=>setMantenMeses(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+            <label htmlFor="inflacionPct" className="text-sm text-gray-700">Inflación anual (% anual)</label>
+            <input id="inflacionPct" type="number" step={0.1} value={inflacionPct} onChange={e=>setInflacionPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+            <label htmlFor="plusvaliaRealPct" className="text-sm text-gray-700">Plusvalía real (% adicional)</label>
+            <input id="plusvaliaRealPct" type="number" step={0.1} value={plusvaliaRealPct} onChange={e=>setPlusvaliaRealPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+          </div>
         </div>
 
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3">
-          <h2 className="font-semibold">Escenario 1 · Comprar y alquilar</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Renta mensual recibida</label><input type="number" value={rentaRecibidaMensual} onChange={e=>setRentaRecibidaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} /><span>Ajustar renta por inflación</span></label>
-          <div className="flex items-center justify-between"><label className="mr-2">Aportación anual adicional</label><input type="number" value={aportaE1Anual} onChange={e=>setAportaE1Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
+        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-blue-600 ring-1 ring-blue-100">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Escenario 1 · Comprar y alquilar</h2>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">E1</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-2">
+            <label htmlFor="rentaRecibidaMensual" className="text-sm text-gray-700">Renta recibida (MXN/mes)</label>
+            <input id="rentaRecibidaMensual" type="number" min={0} value={rentaRecibidaMensual} onChange={e=>setRentaRecibidaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
 
-          <div className="pt-2 border-t">
-            <h3 className="font-medium">Impuestos – Arrendamiento</h3>
-            <div className="flex items-center justify-between"><label className="mr-2">Modo</label>
-              <select value={modoArrISR} onChange={e=>setModoArrISR(e.target.value)} className="border rounded px-2 py-1 w-40">
+            <label htmlFor="vacanciaMesesAnual" className="text-sm text-gray-700">Vacancia (meses sin cobrar/año)</label>
+            <input id="vacanciaMesesAnual" type="number" min={0} max={12} step={0.5} value={vacanciaMesesAnual} onChange={e=>setVacanciaMesesAnual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+            <label htmlFor="aportaE1Anual" className="text-sm text-gray-700">Aportación adicional (MXN/año)</label>
+            <input id="aportaE1Anual" type="number" value={aportaE1Anual} onChange={e=>setAportaE1Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+          </div>
+
+          <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
+            <input id="rentaRecibidaIndexa" type="checkbox" checked={rentaRecibidaIndexa} onChange={e=>setRentaRecibidaIndexa(e.target.checked)} />
+            <label htmlFor="rentaRecibidaIndexa">Indexar renta por inflación</label>
+          </div>
+
+          <div className="pt-2 border-t border-blue-100 space-y-2">
+            <h3 className="font-medium text-blue-900">Costos operativos</h3>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <label htmlFor="seguroAnual" className="text-sm text-gray-700">Seguro (MXN/año)</label>
+              <input id="seguroAnual" type="number" min={0} value={seguroAnual} onChange={e=>setSeguroAnual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+              <label htmlFor="condominioMensual" className="text-sm text-gray-700">Condominio/HOA (MXN/mes)</label>
+              <input id="condominioMensual" type="number" min={0} value={condominioMensual} onChange={e=>setCondominioMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+              <label htmlFor="adminPctRenta" className="text-sm text-gray-700">Administración (% de renta cobrada)</label>
+              <input id="adminPctRenta" type="number" min={0} step={0.1} value={adminPctRenta} onChange={e=>setAdminPctRenta(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+              <label htmlFor="capexMonto" className="text-sm text-gray-700">CAPEX (MXN)</label>
+              <input id="capexMonto" type="number" min={0} value={capexMonto} onChange={e=>setCapexMonto(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+              <label htmlFor="capexCadaNAnios" className="text-sm text-gray-700">CAPEX cada N años (0=off)</label>
+              <input id="capexCadaNAnios" type="number" min={0} step={1} value={capexCadaNAnios} onChange={e=>setCapexCadaNAnios(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            </div>
+            <p className="text-xs text-gray-600">Vacancia reduce la renta cobrada. Seguro/condominio/CAPEX se indexan por inflación.</p>
+          </div>
+
+          <div className="pt-2 border-t border-blue-100">
+            <h3 className="font-medium text-blue-900">Impuestos – Arrendamiento</h3>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <label htmlFor="modoArrISR" className="text-sm text-gray-700">Modo</label>
+              <select id="modoArrISR" value={modoArrISR} onChange={e=>setModoArrISR(e.target.value)} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200">
                 <option value="ciega">Deducción ciega</option>
                 <option value="real">Gastos reales</option>
               </select>
             </div>
             {modoArrISR === "ciega" && (
-              <div className="flex items-center justify-between"><label className="mr-2">Deducción ciega (%)</label><input type="number" value={deduccionCiegaPct} onChange={e=>setDeduccionCiegaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
+              <div className="grid grid-cols-2 items-center gap-2 mt-2">
+                <label htmlFor="deduccionCiegaPct" className="text-sm text-gray-700">Deducción ciega (%)</label>
+                <input id="deduccionCiegaPct" type="number" min={0} step={0.1} value={deduccionCiegaPct} onChange={e=>setDeduccionCiegaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              </div>
             )}
-            <div className="flex items-center justify-between"><label className="mr-2">ISR sobre base (%)</label><input type="number" value={isrRentaPct} onChange={e=>setIsrRentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
+            <div className="grid grid-cols-2 items-center gap-2 mt-2">
+              <label htmlFor="isrRentaPct" className="text-sm text-gray-700">ISR sobre base (%)</label>
+              <input id="isrRentaPct" type="number" min={0} step={0.1} value={isrRentaPct} onChange={e=>setIsrRentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            </div>
             <p className="text-xs text-gray-600">En "ciega" la base = ingreso × (1 − deducción). En "real" la base = ingreso − (mantenimiento + predial). El ISR se resta del flujo neto.</p>
+          </div>
+
+          <div className="pt-2 border-t border-blue-100">
+            <h3 className="font-medium text-blue-900">Salida (venta)</h3>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <label htmlFor="comisionVentaPct" className="text-sm text-gray-700">Comisión venta (% del precio)</label>
+              <input id="comisionVentaPct" type="number" min={0} step={0.1} value={comisionVentaPct} onChange={e=>setComisionVentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+              <label htmlFor="gastosVentaPct" className="text-sm text-gray-700">Gastos de venta (% del precio)</label>
+              <input id="gastosVentaPct" type="number" min={0} step={0.1} value={gastosVentaPct} onChange={e=>setGastosVentaPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            </div>
+            <p className="text-xs text-gray-600">Se descuenta una fricción de salida al final del horizonte (corretaje + gastos). No incluye ISR por enajenación.</p>
           </div>
         </div>
 
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3">
-          <h2 className="font-semibold">Escenario 2 · Inversión y alquiler</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Renta mensual pagada</label><input type="number" value={rentaPagadaMensual} onChange={e=>setRentaPagadaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
-          <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} /><span>Indexar renta por inflación</span></label>
-          <div className="flex items-center justify-between"><label className="mr-2">Tasa CETES anual (%)</label><input type="number" value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-          <div className="flex items-center justify-between"><label className="mr-2">Aportación anual adicional</label><input type="number" value={aportaE2Anual} onChange={e=>setAportaE2Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-40"/></div>
+        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-emerald-600 ring-1 ring-emerald-100">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Escenario 2 · Inversión y alquiler</h2>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">E2</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-2">
+            <label htmlFor="rentaPagadaMensual" className="text-sm text-gray-700">Renta pagada (MXN/mes)</label>
+            <input id="rentaPagadaMensual" type="number" min={0} value={rentaPagadaMensual} onChange={e=>setRentaPagadaMensual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
 
-          <div className="pt-2 border-t">
-            <h3 className="font-medium">Impuestos – Intereses</h3>
-            <div className="flex items-center justify-between"><label className="mr-2">ISR intereses (%)</label><input type="number" value={isrInteresesPct} onChange={e=>setIsrInteresesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-28"/></div>
-            <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={gravaInteresReal} onChange={e=>setGravaInteresReal(e.target.checked)} /><span>Gravar solo interés real</span></label>
+            <label htmlFor="tasaCetesPct" className="text-sm text-gray-700">Tasa CETES (% nominal anual)</label>
+            <input id="tasaCetesPct" type="number" step={0.1} value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+
+            <label htmlFor="aportaE2Anual" className="text-sm text-gray-700">Aportación adicional (MXN/año)</label>
+            <input id="aportaE2Anual" type="number" value={aportaE2Anual} onChange={e=>setAportaE2Anual(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+          </div>
+
+          <div className="inline-flex items-center space-x-2 text-sm text-gray-700">
+            <input id="rentaPagadaIndexa" type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} />
+            <label htmlFor="rentaPagadaIndexa">Indexar renta por inflación</label>
+          </div>
+
+          <div className="pt-2 border-t border-emerald-100">
+            <h3 className="font-medium text-emerald-900">Impuestos – Intereses</h3>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <label htmlFor="isrInteresesPct" className="text-sm text-gray-700">ISR intereses (%)</label>
+              <input id="isrInteresesPct" type="number" min={0} step={0.1} value={isrInteresesPct} onChange={e=>setIsrInteresesPct(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+            </div>
+            <div className="inline-flex items-center space-x-2">
+              <input id="gravaInteresReal" type="checkbox" checked={gravaInteresReal} onChange={e=>setGravaInteresReal(e.target.checked)} />
+              <label htmlFor="gravaInteresReal">Gravar solo interés real</label>
+            </div>
             <p className="text-xs text-gray-600">Interés real ≈ interés − (inflación × capital). Si está activo, el ISR se calcula sobre el interés real no negativo.</p>
           </div>
         </div>
 
-        <div className="bg-white shadow rounded-2xl p-4 space-y-3">
-          <h2 className="font-semibold">Horizonte</h2>
-          <div className="flex items-center justify-between"><label className="mr-2">Años</label><input type="number" value={horizonte} onChange={e=>setHorizonte(Number(e.target.value))} className="border rounded px-2 py-1 w-24"/></div>
+        <div className="bg-white shadow rounded-2xl p-4 space-y-3 border-t-4 border-amber-500 ring-1 ring-amber-100">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Horizonte</h2>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">Tiempo</span>
+          </div>
+          <div className="grid grid-cols-2 items-center gap-2">
+            <label htmlFor="horizonte" className="text-sm text-gray-700">Años</label>
+            <input id="horizonte" type="number" min={1} step={1} value={horizonte} onChange={e=>setHorizonte(Number(e.target.value))} className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+          </div>
           <p className="text-xs text-gray-600">Se muestran resúmenes a 5, 10 y el horizonte elegido, además de dos gráficas.</p>
         </div>
       </div>
@@ -219,8 +433,8 @@ export default function SimuladorCompraVsInversion() {
             <LineChart data={rh.data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="anio" />
-              <YAxis tickFormatter={(v)=>mxn.format(v)} width={100} />
-              <Tooltip formatter={(v)=>mxn.format(Number(v))} labelFormatter={(l)=>`Año ${l}`} />
+              <YAxis tickFormatter={fmtAxis} width={110} />
+              <Tooltip content={<TooltipPatrimonio mxn={mxn} />} />
               <Legend />
               <Line type="monotone" dataKey="totalEsc1" name="Escenario 1: Comprar" dot={false} stroke="#2563eb" strokeWidth={2} />
               <Line type="monotone" dataKey="totalEsc2" name="Escenario 2: Inversión" dot={false} stroke="#10b981" strokeWidth={2} />
@@ -237,9 +451,10 @@ export default function SimuladorCompraVsInversion() {
             <BarChart data={rh.dataFlow} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="anio" />
-              <YAxis tickFormatter={(v)=>mxn.format(v)} width={100} />
+              <YAxis tickFormatter={fmtAxis} width={110} />
               <Tooltip formatter={(v)=>mxn.format(Number(v))} labelFormatter={(l)=>`Año ${l}`} />
               <Legend />
+              <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="4 4" />
               <Bar dataKey="flowEsc1" name="Flujo E1 (Comprar)" fill="#2563eb" />
               <Bar dataKey="flowEsc2" name="Flujo E2 (Inversión)" fill="#10b981" />
             </BarChart>
@@ -249,26 +464,74 @@ export default function SimuladorCompraVsInversion() {
 
       {/* Resúmenes */}
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="bg-white shadow rounded-2xl p-4">
-          <h3 className="font-semibold mb-2">Resultado a 5 años</h3>
+        <div className={(() => {
+          const diff = r5.e1.patrimonioTotal - r5.e2.capitalFinal;
+          const meta = ganadorMeta(diff);
+          return `bg-white shadow rounded-2xl p-4 border-t-4 ring-1 ${meta.cardClass}`;
+        })()}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold">Resultado a 5 años</h3>
+            <span className={(() => {
+              const diff = r5.e1.patrimonioTotal - r5.e2.capitalFinal;
+              const meta = ganadorMeta(diff);
+              return `text-xs font-medium px-2 py-0.5 rounded-full ${meta.badgeClass}`;
+            })()}>
+              {(() => {
+                const diff = r5.e1.patrimonioTotal - r5.e2.capitalFinal;
+                return ganadorMeta(diff).titulo;
+              })()}
+            </span>
+          </div>
           <div className="space-y-1">
-            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(r5.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r5.e1.valorCasaFinal)}, Efectivo {mxn.format(r5.e1.efectivoAcumulado)})</span></div>
+            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(r5.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r5.e1.valorCasaFinal)}, Efectivo {mxn.format(r5.e1.efectivoAcumulado)}, Salida −{mxn.format(r5.e1.costoSalida)})</span></div>
             <div><b>Escenario 2:</b> Capital final {mxn.format(r5.e2.capitalFinal)}</div>
             <div className={(r5.e1.patrimonioTotal - r5.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(r5.e1.patrimonioTotal - r5.e2.capitalFinal)}</div>
           </div>
         </div>
-        <div className="bg-white shadow rounded-2xl p-4">
-          <h3 className="font-semibold mb-2">Resultado a 10 años</h3>
+        <div className={(() => {
+          const diff = r10.e1.patrimonioTotal - r10.e2.capitalFinal;
+          const meta = ganadorMeta(diff);
+          return `bg-white shadow rounded-2xl p-4 border-t-4 ring-1 ${meta.cardClass}`;
+        })()}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold">Resultado a 10 años</h3>
+            <span className={(() => {
+              const diff = r10.e1.patrimonioTotal - r10.e2.capitalFinal;
+              const meta = ganadorMeta(diff);
+              return `text-xs font-medium px-2 py-0.5 rounded-full ${meta.badgeClass}`;
+            })()}>
+              {(() => {
+                const diff = r10.e1.patrimonioTotal - r10.e2.capitalFinal;
+                return ganadorMeta(diff).titulo;
+              })()}
+            </span>
+          </div>
           <div className="space-y-1">
-            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(r10.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r10.e1.valorCasaFinal)}, Efectivo {mxn.format(r10.e1.efectivoAcumulado)})</span></div>
+            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(r10.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r10.e1.valorCasaFinal)}, Efectivo {mxn.format(r10.e1.efectivoAcumulado)}, Salida −{mxn.format(r10.e1.costoSalida)})</span></div>
             <div><b>Escenario 2:</b> Capital final {mxn.format(r10.e2.capitalFinal)}</div>
             <div className={(r10.e1.patrimonioTotal - r10.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(r10.e1.patrimonioTotal - r10.e2.capitalFinal)}</div>
           </div>
         </div>
-        <div className="bg-white shadow rounded-2xl p-4">
-          <h3 className="font-semibold mb-2">Resultado a {horizonte} años</h3>
+        <div className={(() => {
+          const diff = rh.e1.patrimonioTotal - rh.e2.capitalFinal;
+          const meta = ganadorMeta(diff);
+          return `bg-white shadow rounded-2xl p-4 border-t-4 ring-1 ${meta.cardClass}`;
+        })()}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold">Resultado a {horizonte} años</h3>
+            <span className={(() => {
+              const diff = rh.e1.patrimonioTotal - rh.e2.capitalFinal;
+              const meta = ganadorMeta(diff);
+              return `text-xs font-medium px-2 py-0.5 rounded-full ${meta.badgeClass}`;
+            })()}>
+              {(() => {
+                const diff = rh.e1.patrimonioTotal - rh.e2.capitalFinal;
+                return ganadorMeta(diff).titulo;
+              })()}
+            </span>
+          </div>
           <div className="space-y-1">
-            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(rh.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(rh.e1.valorCasaFinal)}, Efectivo {mxn.format(rh.e1.efectivoAcumulado)})</span></div>
+            <div><b>Escenario 1:</b> Patrimonio total {mxn.format(rh.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(rh.e1.valorCasaFinal)}, Efectivo {mxn.format(rh.e1.efectivoAcumulado)}, Salida −{mxn.format(rh.e1.costoSalida)})</span></div>
             <div><b>Escenario 2:</b> Capital final {mxn.format(rh.e2.capitalFinal)}</div>
             <div className={(rh.e1.patrimonioTotal - rh.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(rh.e1.patrimonioTotal - rh.e2.capitalFinal)}</div>
           </div>
