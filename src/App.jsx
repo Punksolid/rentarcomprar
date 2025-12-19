@@ -145,6 +145,11 @@ export default function SimuladorCompraVsInversion() {
   const [predialPct, setPredialPct] = useState(0.2);   // % anual sobre valor del inmueble
   const [mantenMeses, setMantenMeses] = useState(1);   // meses de renta por año como mantenimiento
 
+  // Financiamiento (Escenario 3)
+  const [enganchePct, setEnganchePct] = useState(20); // % de enganche sobre el precio
+  const [tasaHipotecariaPct, setTasaHipotecariaPct] = useState(10); // % nominal anual de la hipoteca
+  const [plazoHipotecaAnios, setPlazoHipotecaAnios] = useState(20); // plazo total en años
+
   // Costos operativos adicionales (Escenario 1)
   const [vacanciaMesesAnual, setVacanciaMesesAnual] = useState(0); // meses/año sin cobrar renta
   const [seguroAnual, setSeguroAnual] = useState(0); // MXN/año
@@ -181,7 +186,7 @@ export default function SimuladorCompraVsInversion() {
 
   // Estado del wizard
   const [pasoActual, setPasoActual] = useState(1);
-  const totalPasos = 4;
+  const totalPasos = 5;
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -315,31 +320,139 @@ export default function SimuladorCompraVsInversion() {
     };
   }
 
+  function simularEscenario3(anios) {
+    const infl = inflacionPct / 100;
+    const plus = plusvaliaRealPct / 100;
+    const pred = predialPct / 100;
+    const gastos = precio * (gastosPct / 100);
+
+    const rendimientoRenta = clamp(rendimientoRentaPct, 0, 100) / 100;
+    const vacMeses = clamp(vacanciaMesesAnual, 0, 12);
+    const factorCobro = (12 - vacMeses) / 12;
+    const adminPct = clamp(adminPctRenta, 0, 100) / 100;
+    const comVenta = clamp(comisionVentaPct, 0, 100) / 100;
+    const gasVenta = clamp(gastosVentaPct, 0, 100) / 100;
+
+    const enganche = precio * (enganchePct / 100);
+    let saldoHipoteca = Math.max(0, precio - enganche);
+    const nMesesTotal = Math.max(0, Math.floor(plazoHipotecaAnios * 12));
+    const tasaMensual = (tasaHipotecariaPct / 100) / 12;
+    let mesesRestantes = nMesesTotal;
+
+    let pagoMensual = 0;
+    if (tasaMensual > 0 && nMesesTotal > 0) {
+      const factor = Math.pow(1 + tasaMensual, nMesesTotal);
+      pagoMensual = saldoHipoteca * (tasaMensual * factor) / (factor - 1);
+    } else if (nMesesTotal > 0) {
+      pagoMensual = saldoHipoteca / nMesesTotal;
+    }
+
+    let valorCasa = precio;
+    let efectivo = -enganche - gastos; // egresos iniciales: enganche + gastos de compra
+
+    let seguro = seguroAnual;
+    let condominio = condominioMensual;
+    let capex = capexMonto;
+
+    const rows = [];
+
+    for (let a = 1; a <= anios; a++) {
+      const rentaAnualBruta = valorCasa * rendimientoRenta;
+      const rentaAnual = rentaAnualBruta * factorCobro;
+      const rentaMensual = rentaAnualBruta / 12;
+      const mantenimiento = rentaMensual * mantenMeses; // meses de renta por año
+      const predial = pred * valorCasa;
+      const administracion = rentaAnual * adminPct;
+      const condominioAnual = condominio * 12;
+      const capexAnual = capexCadaNAnios > 0 && a % capexCadaNAnios === 0 ? capex : 0;
+
+      // ISR por arrendamiento (mismo criterio que E1)
+      let baseISR = 0;
+      if (modoArrISR === "ciega") {
+        baseISR = Math.max(0, rentaAnual * (1 - deduccionCiegaPct / 100));
+      } else {
+        baseISR = Math.max(0, rentaAnual - mantenimiento - predial);
+      }
+      const isrRenta = baseISR * (isrRentaPct / 100);
+
+      // Servicio de deuda del año: iterar mes a mes para mayor precisión
+      let interesHipotecaAnual = 0;
+      let amortizacionAnual = 0;
+      let pagoHipotecaAnual = 0;
+      for (let m = 0; m < 12; m++) {
+        if (mesesRestantes > 0 && saldoHipoteca > 0 && pagoMensual > 0) {
+          const interesMes = saldoHipoteca * tasaMensual;
+          const amortMes = Math.min(pagoMensual - interesMes, saldoHipoteca);
+          interesHipotecaAnual += interesMes;
+          amortizacionAnual += amortMes;
+          pagoHipotecaAnual += interesMes + amortMes;
+          saldoHipoteca -= amortMes;
+          mesesRestantes -= 1;
+        }
+      }
+
+      const neto = rentaAnual - mantenimiento - predial - administracion - seguro - condominioAnual - capexAnual - isrRenta - pagoHipotecaAnual;
+      efectivo += neto;
+
+      const patrimonioBruto = valorCasa + efectivo - saldoHipoteca;
+      rows.push({ anio: a, rentaAnualBruta, rentaAnual, mantenimiento, predial, administracion, seguro, condominioAnual, capexAnual, isrRenta, interesHipotecaAnual, amortizacionAnual, pagoHipotecaAnual, saldoHipoteca, neto, valorCasa, efectivo, total: patrimonioBruto });
+
+      // actualización de variables para el siguiente año
+      valorCasa *= (1 + infl) * (1 + plus);
+      if (seguro > 0) seguro *= (1 + infl);
+      if (condominio > 0) condominio *= (1 + infl);
+      if (capex > 0) capex *= (1 + infl);
+    }
+
+    const last = rows.at(-1);
+    const valorCasaFinal = last?.valorCasa ?? valorCasa;
+    const efectivoAcumulado = last?.efectivo ?? efectivo;
+    const saldoHipotecaFinal = last?.saldoHipoteca ?? saldoHipoteca;
+    const patrimonioBruto = last?.total ?? (valorCasaFinal + efectivoAcumulado - saldoHipotecaFinal);
+
+    const costoSalida = valorCasaFinal * (comVenta + gasVenta);
+    const patrimonioNeto = patrimonioBruto - costoSalida;
+
+    return {
+      valorCasaFinal,
+      efectivoAcumulado,
+      saldoHipotecaFinal,
+      patrimonioBruto,
+      costoSalida,
+      patrimonioTotal: patrimonioNeto,
+      detalle: rows,
+    };
+  }
+
   function construirSerie(anios) {
     const e1 = simularEscenario1(anios);
     const e2 = simularEscenario2(anios);
+    const e3 = simularEscenario3(anios);
 
     // construir dataset año a año para el gráfico principal (patrimonio vs capital)
-    const len = Math.max(e1.detalle.length, e2.detalle.length);
+    const len = Math.max(e1.detalle.length, e2.detalle.length, e3.detalle.length);
     const data = [];
     const dataFlow = [];
 
     for (let i = 0; i < len; i++) {
       const p1 = e1.detalle[i];
       const p2 = e2.detalle[i];
+      const p3 = e3.detalle[i];
       data.push({
         anio: (i + 1).toString(),
         totalEsc1: p1 ? p1.total : (e1.detalle.at(-1)?.total ?? 0),
         totalEsc2: p2 ? p2.capital : (e2.detalle.at(-1)?.capital ?? 0),
+        totalEsc3: p3 ? p3.total : (e3.detalle.at(-1)?.total ?? 0),
       });
       dataFlow.push({
         anio: (i + 1).toString(),
         flowEsc1: p1 ? p1.neto : 0,
         flowEsc2: p2 ? p2.neto : 0,
+        flowEsc3: p3 ? p3.neto : 0,
       });
     }
 
-    return { e1, e2, data, dataFlow };
+    return { e1, e2, e3, data, dataFlow };
   }
 
   const deps = [
@@ -368,6 +481,9 @@ export default function SimuladorCompraVsInversion() {
     capexCadaNAnios,
     comisionVentaPct,
     gastosVentaPct,
+    enganchePct,
+    tasaHipotecariaPct,
+    plazoHipotecaAnios,
   ];
   const r5 = useMemo(() => construirSerie(5), deps);
   const r10 = useMemo(() => construirSerie(10), deps);
@@ -401,8 +517,9 @@ export default function SimuladorCompraVsInversion() {
               { num: 1, titulo: "Activo", color: "slate" },
               { num: 2, titulo: "Escenario 1", color: "blue" },
               { num: 3, titulo: "Escenario 2", color: "emerald" },
-              { num: 4, titulo: "Horizonte", color: "amber" },
-            ].map((paso, idx) => {
+              { num: 4, titulo: "Escenario 3", color: "amber" },
+              { num: 5, titulo: "Horizonte", color: "purple" },
+            ].map((paso, idx, arr) => {
               const activo = pasoActual === paso.num;
               const completado = pasoActual > paso.num;
               const colorClasses = {
@@ -410,6 +527,7 @@ export default function SimuladorCompraVsInversion() {
                 blue: { activo: "bg-blue-600 text-white ring-4 ring-blue-100", completado: "bg-blue-500 text-white", linea: "bg-blue-400" },
                 emerald: { activo: "bg-emerald-700 text-white ring-4 ring-emerald-200", completado: "bg-emerald-600 text-white", linea: "bg-emerald-400" },
                 amber: { activo: "bg-amber-600 text-white ring-4 ring-amber-100", completado: "bg-amber-500 text-white", linea: "bg-amber-400" },
+                purple: { activo: "bg-purple-700 text-white ring-4 ring-purple-200", completado: "bg-purple-600 text-white", linea: "bg-purple-400" },
               };
               const colors = colorClasses[paso.color];
               return (
@@ -431,7 +549,7 @@ export default function SimuladorCompraVsInversion() {
                       {paso.titulo}
                     </span>
                   </div>
-                  {idx < 3 && (
+                  {idx < arr.length - 1 && (
                     <div
                       className={`flex-1 h-0.5 mx-2 ${
                         completado ? colors.linea : "bg-gray-300"
@@ -676,6 +794,27 @@ export default function SimuladorCompraVsInversion() {
           {pasoActual === 4 && (
             <div className="max-w-2xl mx-auto space-y-3 border-t-4 border-amber-500 ring-1 ring-amber-100 rounded-2xl p-4">
               <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg">Escenario 3 · Comprar con hipoteca</h2>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">Hipoteca</span>
+              </div>
+              <p className="text-sm text-gray-600 pb-2 border-b">Simula compra con financiamiento: define enganche, tasa y plazo. El flujo neto considera renta estimada, costos operativos, impuestos y servicio de la deuda.</p>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <label htmlFor="enganchePct" className="text-sm text-gray-700">Enganche (% del precio)</label>
+                <input id="enganchePct" type="number" min={0} step={0.1} value={enganchePct} onChange={e=>setEnganchePct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
+
+                <label htmlFor="tasaHipotecariaPct" className="text-sm text-gray-700">Tasa hipotecaria anual (%)</label>
+                <input id="tasaHipotecariaPct" type="number" min={0} step={0.1} value={tasaHipotecariaPct} onChange={e=>setTasaHipotecariaPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
+
+                <label htmlFor="plazoHipotecaAnios" className="text-sm text-gray-700">Plazo de hipoteca (años)</label>
+                <input id="plazoHipotecaAnios" type="number" min={1} step={1} value={plazoHipotecaAnios} onChange={e=>setPlazoHipotecaAnios(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
+              </div>
+              <p className="text-xs text-gray-600">Modelo: amortización francesa con pagos mensuales fijos; patrimonio = inmueble + efectivo − saldo de hipoteca; se descuenta fricción de salida igual que en Compra.</p>
+            </div>
+          )}
+
+          {pasoActual === 5 && (
+            <div className="max-w-2xl mx-auto space-y-3 border-t-4 border-amber-500 ring-1 ring-amber-100 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-lg">Horizonte de inversión</h2>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">Tiempo</span>
               </div>
@@ -734,6 +873,7 @@ export default function SimuladorCompraVsInversion() {
               <Legend />
               <Line type="monotone" dataKey="totalEsc1" name="Compra" dot={false} stroke="#2563eb" strokeWidth={2} />
               <Line type="monotone" dataKey="totalEsc2" name="Renta" dot={false} stroke="#059669" strokeWidth={2} />
+              <Line type="monotone" dataKey="totalEsc3" name="Hipoteca" dot={false} stroke="#f59e0b" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -753,6 +893,7 @@ export default function SimuladorCompraVsInversion() {
               <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="4 4" />
               <Bar dataKey="flowEsc1" name="Flujo Compra" fill="#2563eb" />
               <Bar dataKey="flowEsc2" name="Flujo Renta" fill="#059669" />
+              <Bar dataKey="flowEsc3" name="Flujo Hipoteca" fill="#f59e0b" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -781,7 +922,9 @@ export default function SimuladorCompraVsInversion() {
           <div className="space-y-1">
             <div><b>Compra:</b> Patrimonio total {mxn.format(r5.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r5.e1.valorCasaFinal)}, Efectivo {mxn.format(r5.e1.efectivoAcumulado)}, Salida −{mxn.format(r5.e1.costoSalida)})</span></div>
             <div><b>Renta:</b> Capital final {mxn.format(r5.e2.capitalFinal)}</div>
+            <div><b>Hipoteca:</b> Patrimonio total {mxn.format(r5.e3.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r5.e3.valorCasaFinal)}, Efectivo {mxn.format(r5.e3.efectivoAcumulado)}, Hipoteca {mxn.format(r5.e3.saldoHipotecaFinal)}, Salida −{mxn.format(r5.e3.costoSalida)})</span></div>
             <div className={(r5.e1.patrimonioTotal - r5.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(r5.e1.patrimonioTotal - r5.e2.capitalFinal)}</div>
+            <div className={(r5.e3.patrimonioTotal - r5.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia Hipoteca − Renta:</b> {mxn.format(r5.e3.patrimonioTotal - r5.e2.capitalFinal)}</div>
           </div>
         </div>
         <div className={(() => {
@@ -805,7 +948,9 @@ export default function SimuladorCompraVsInversion() {
           <div className="space-y-1">
             <div><b>Compra:</b> Patrimonio total {mxn.format(r10.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r10.e1.valorCasaFinal)}, Efectivo {mxn.format(r10.e1.efectivoAcumulado)}, Salida −{mxn.format(r10.e1.costoSalida)})</span></div>
             <div><b>Renta:</b> Capital final {mxn.format(r10.e2.capitalFinal)}</div>
+            <div><b>Hipoteca:</b> Patrimonio total {mxn.format(r10.e3.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(r10.e3.valorCasaFinal)}, Efectivo {mxn.format(r10.e3.efectivoAcumulado)}, Hipoteca {mxn.format(r10.e3.saldoHipotecaFinal)}, Salida −{mxn.format(r10.e3.costoSalida)})</span></div>
             <div className={(r10.e1.patrimonioTotal - r10.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(r10.e1.patrimonioTotal - r10.e2.capitalFinal)}</div>
+            <div className={(r10.e3.patrimonioTotal - r10.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia Hipoteca − Renta:</b> {mxn.format(r10.e3.patrimonioTotal - r10.e2.capitalFinal)}</div>
           </div>
         </div>
         <div className={(() => {
@@ -829,7 +974,9 @@ export default function SimuladorCompraVsInversion() {
           <div className="space-y-1">
             <div><b>Compra:</b> Patrimonio total {mxn.format(rh.e1.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(rh.e1.valorCasaFinal)}, Efectivo {mxn.format(rh.e1.efectivoAcumulado)}, Salida −{mxn.format(rh.e1.costoSalida)})</span></div>
             <div><b>Renta:</b> Capital final {mxn.format(rh.e2.capitalFinal)}</div>
+            <div><b>Hipoteca:</b> Patrimonio total {mxn.format(rh.e3.patrimonioTotal)} <span className="text-gray-500">(Inmueble {mxn.format(rh.e3.valorCasaFinal)}, Efectivo {mxn.format(rh.e3.efectivoAcumulado)}, Hipoteca {mxn.format(rh.e3.saldoHipotecaFinal)}, Salida −{mxn.format(rh.e3.costoSalida)})</span></div>
             <div className={(rh.e1.patrimonioTotal - rh.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia:</b> {mxn.format(rh.e1.patrimonioTotal - rh.e2.capitalFinal)}</div>
+            <div className={(rh.e3.patrimonioTotal - rh.e2.capitalFinal) >= 0 ? "text-green-700" : "text-red-700"}><b>Diferencia Hipoteca − Renta:</b> {mxn.format(rh.e3.patrimonioTotal - rh.e2.capitalFinal)}</div>
           </div>
         </div>
       </div>
