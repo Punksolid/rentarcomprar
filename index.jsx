@@ -152,7 +152,7 @@ export default function SimuladorCompraVsInversion() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Simulador genérico: Comprar inmueble vs Invertir en CETES</h1>
+      <h1 className="text-2xl font-bold">Simulador genérico: Comprar inmueble vs Invertir (cetes, sofipos, bolsa de valores)</h1>
       <p className="text-sm text-gray-600">Ajusta las variables. Todas impactan el resultado y las gráficas. El <b>Escenario 1</b> asume compra del inmueble y recepción de renta; el <b>Escenario 2</b> asume inversión financiera y pago de una renta de mercado.</p>
 
       {/* Controles principales */}
@@ -193,7 +193,7 @@ export default function SimuladorCompraVsInversion() {
           <h2 className="font-semibold">Escenario 2 · Inversión y alquiler</h2>
           <div className="flex items-center justify-between"><label className="mr-2">Renta mensual pagada</label><input type="number" value={rentaPagadaMensual} onChange={e=>setRentaPagadaMensual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
           <label className="inline-flex items-center space-x-2"><input type="checkbox" checked={rentaPagadaIndexa} onChange={e=>setRentaPagadaIndexa(e.target.checked)} className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer"/><span>Indexar renta por inflación</span></label>
-          <div className="flex items-center justify-between"><label className="mr-2">Tasa CETES anual (%)</label><input type="number" value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
+          <div className="flex items-center justify-between"><label className="mr-2">Tasa de inversión anual (%) (cetes, sofipos, bolsa de valores)</label><input type="number" value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-28 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
           <div className="flex items-center justify-between"><label className="mr-2">Aportación anual adicional</label><input type="number" value={aportaE2Anual} onChange={e=>setAportaE2Anual(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-40 text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/></div>
 
           <div className="pt-2 border-t">

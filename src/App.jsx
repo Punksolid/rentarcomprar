@@ -608,7 +608,7 @@ export default function SimuladorCompraVsInversion() {
                 <h2 className="font-semibold text-lg">Escenario Renta · Invertir y pagar renta</h2>
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Renta</span>
               </div>
-              <p className="text-sm text-gray-600 pb-2 border-b">En lugar de comprar, inviertes el mismo capital inicial en CETES y pagas renta de mercado. Define la renta pagada, tasa de rendimiento de CETES e impuestos sobre intereses.</p>
+              <p className="text-sm text-gray-600 pb-2 border-b">En lugar de comprar, inviertes el mismo capital inicial en inversión (cetes, sofipos, bolsa de valores) y pagas renta de mercado. Define la renta pagada, tasa de rendimiento de la inversión e impuestos sobre intereses.</p>
               <div className="grid grid-cols-2 items-center gap-2">
             <label htmlFor="rentaPagadaMensual" className="text-sm text-gray-700">Renta pagada ({moneda}/mes)</label>
             <InputNumeroFormateado
@@ -621,7 +621,7 @@ export default function SimuladorCompraVsInversion() {
               className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"
             />
 
-            <label htmlFor="tasaCetesPct" className="text-sm text-gray-700">Tasa CETES (% nominal anual)</label>
+            <label htmlFor="tasaCetesPct" className="text-sm text-gray-700">Tasa de inversión (% nominal anual) (cetes, sofipos, bolsa de valores)</label>
             <input id="tasaCetesPct" type="number" step={0.1} value={tasaCetesPct} onChange={e=>setTasaCetesPct(Number(e.target.value))} className="border-2 border-gray-300 rounded-lg px-4 py-2.5 w-full text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-400 bg-gray-50"/>
 
             <label htmlFor="aportaE2Anual" className="text-sm text-gray-700">Aportación adicional ({moneda}/año)</label>

@@ -1,7 +1,7 @@
 # Copilot Instructions
 
 ## Project Overview
-Single-page React financial simulator comparing real estate investment (buy & rent out) vs CETES financial investment (invest & pay rent). Mexican context with MXN currency, inflation indexing, and Mexican tax calculations (ISR on rental income and interest).
+Single-page React financial simulator comparing real estate investment (buy & rent out) vs financial investment (cetes, sofipos, bolsa de valores) (invest & pay rent). Mexican context with MXN currency, inflation indexing, and Mexican tax calculations (ISR on rental income and interest).
 
 ## Architecture
 - **Single component**: [index.jsx](../index.jsx) contains the entire app
@@ -17,7 +17,7 @@ Two independent scenarios simulated year-by-year:
 1. **Scenario 1** (`simularEscenario1`): Buy property + collect rent
    - Tracks: property appreciation, rental income (indexed), maintenance, predial tax, ISR on rental income
    - Result: `valorCasa + efectivo` = total patrimony
-2. **Scenario 2** (`simularEscenario2`): Invest in CETES + pay rent
+2. **Scenario 2** (`simularEscenario2`): Invest (cetes, sofipos, bolsa de valores) + pay rent
    - Tracks: capital growth with interest, rent payments (indexed), ISR on interest
    - Result: `capital` = accumulated investment
 

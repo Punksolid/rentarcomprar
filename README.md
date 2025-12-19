@@ -2,7 +2,7 @@
 
 Simulador financiero interactivo para comparar dos escenarios de inversión:
 1. **Escenario 1**: Comprar inmueble y alquilarlo
-2. **Escenario 2**: Invertir en CETES y pagar renta
+2. **Escenario 2**: Invertir (cetes, sofipos, bolsa de valores) y pagar renta
 
 ## Desarrollo en GitHub Codespaces
 
